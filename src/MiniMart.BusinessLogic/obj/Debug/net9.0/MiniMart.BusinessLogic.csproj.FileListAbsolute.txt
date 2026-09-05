@@ -1,0 +1,14 @@
+D:\c#\MartManagementSystem\src\MiniMart.BusinessLogic\bin\Debug\net9.0\MiniMart.BusinessLogic.deps.json
+D:\c#\MartManagementSystem\src\MiniMart.BusinessLogic\bin\Debug\net9.0\MiniMart.BusinessLogic.dll
+D:\c#\MartManagementSystem\src\MiniMart.BusinessLogic\bin\Debug\net9.0\MiniMart.BusinessLogic.pdb
+D:\c#\MartManagementSystem\src\MiniMart.BusinessLogic\obj\Debug\net9.0\MiniMart.BusinessLogic.GeneratedMSBuildEditorConfig.editorconfig
+D:\c#\MartManagementSystem\src\MiniMart.BusinessLogic\obj\Debug\net9.0\MiniMart.BusinessLogic.AssemblyInfoInputs.cache
+D:\c#\MartManagementSystem\src\MiniMart.BusinessLogic\obj\Debug\net9.0\MiniMart.BusinessLogic.AssemblyInfo.cs
+D:\c#\MartManagementSystem\src\MiniMart.BusinessLogic\obj\Debug\net9.0\MiniMart.BusinessLogic.csproj.CoreCompileInputs.cache
+D:\c#\MartManagementSystem\src\MiniMart.BusinessLogic\obj\Debug\net9.0\MiniMart.BusinessLogic.dll
+D:\c#\MartManagementSystem\src\MiniMart.BusinessLogic\obj\Debug\net9.0\refint\MiniMart.BusinessLogic.dll
+D:\c#\MartManagementSystem\src\MiniMart.BusinessLogic\obj\Debug\net9.0\MiniMart.BusinessLogic.pdb
+D:\c#\MartManagementSystem\src\MiniMart.BusinessLogic\obj\Debug\net9.0\ref\MiniMart.BusinessLogic.dll
+D:\c#\MartManagementSystem\src\MiniMart.BusinessLogic\obj\verifybuild\Debug\net9.0\MiniMart.BusinessLogic.deps.json
+D:\c#\MartManagementSystem\src\MiniMart.BusinessLogic\obj\verifybuild\Debug\net9.0\MiniMart.BusinessLogic.dll
+D:\c#\MartManagementSystem\src\MiniMart.BusinessLogic\obj\verifybuild\Debug\net9.0\MiniMart.BusinessLogic.pdb
