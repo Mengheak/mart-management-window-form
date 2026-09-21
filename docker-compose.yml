@@ -6,14 +6,9 @@ services:
     restart: unless-stopped
     environment:
       ACCEPT_EULA: "Y"
-      # Must match the password the sql_data volume was initialised with. Changing this
-      # value does not reset SA's password on an existing volume; it only affects the
-      # healthcheck below, which would then fail and block dbgate from starting.
       MSSQL_SA_PASSWORD: "Heak020507#"
       MSSQL_PID: "Developer"
     ports:
-      # Host port 1434: the local SQL Server 2014 instance already owns 1433, and it wins
-      # for localhost connections, which left this container unreachable from Windows.
       - "1434:1433"
     volumes:
       - sql_data:/var/opt/mssql
@@ -41,7 +36,7 @@ services:
       PORT_sql1: 1433
       ENGINE_sql1: mssql@dbgate-plugin-mssql
     ports:
-      - "8080:3000"
+      - "3033:3000"
     volumes:
       - dbgate_data:/root/.dbgate
     depends_on:
