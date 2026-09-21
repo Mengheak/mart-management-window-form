@@ -5,9 +5,10 @@ Architecture** with **ADO.NET** against **SQL Server**, implementing the design 
 `Mini_Mart_Management_System_Documentation.docx` and the schema in
 `MiniMart_Database_Schema.sql`.
 
-**Documentation:** this file covers installation and setup · [PROJECT_EXPLAINED.md](PROJECT_EXPLAINED.md)
-explains the system in plain language · [SYSTEM_FLOW.md](SYSTEM_FLOW.md) traces the code
-file by file.
+**Documentation:** this file covers installation and setup ·
+[PROJECT_EXPLAINED.md](PROJECT_EXPLAINED.md) explains the system in plain language ·
+[DATA_MANAGEMENT.md](DATA_MANAGEMENT.md) covers editing, querying, backing up and resetting
+the data · [SYSTEM_FLOW.md](SYSTEM_FLOW.md) traces the code file by file.
 
 ### Quick start
 

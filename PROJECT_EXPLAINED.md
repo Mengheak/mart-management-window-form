@@ -5,6 +5,7 @@ step by step when someone uses it.
 
 > Companion documents:
 > [README.md](README.md) = how to install and run it.
+> [DATA_MANAGEMENT.md](DATA_MANAGEMENT.md) = how to edit, query, back up and reset the data.
 > [SYSTEM_FLOW.md](SYSTEM_FLOW.md) = the same story with every file and method named.
 > **This file** = the short, simple version you can explain out loud.
 
