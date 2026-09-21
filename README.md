@@ -5,6 +5,26 @@ Architecture** with **ADO.NET** against **SQL Server**, implementing the design 
 `Mini_Mart_Management_System_Documentation.docx` and the schema in
 `MiniMart_Database_Schema.sql`.
 
+**Documentation:** this file covers installation and setup · [PROJECT_EXPLAINED.md](PROJECT_EXPLAINED.md)
+explains the system in plain language · [SYSTEM_FLOW.md](SYSTEM_FLOW.md) traces the code
+file by file.
+
+### Quick start
+
+Windows + [.NET SDK 9](https://dotnet.microsoft.com/download/dotnet/9.0) + Docker, from the
+repository root:
+
+```bash
+docker compose up -d
+sqlcmd -S localhost,1434 -U sa -P 'Heak020507#' -b -i MiniMart_Database_Schema.sql
+sqlcmd -S localhost,1434 -U sa -P 'Heak020507#' -b -i MiniMart_SeedData.sql
+dotnet run --project src/MiniMart.Presentation
+```
+
+The app asks you to create the first admin account on first launch. Full instructions,
+including how to use an existing SQL Server instead of Docker and how to change that
+password, are in §2–§5.
+
 ---
 
 ## 1. Solution layout
@@ -41,59 +61,129 @@ MiniMartManagementSystem.sln
 
 ---
 
-## 2. Prerequisites
+## 2. Install the prerequisites
 
-* **.NET SDK 9.0** or later (`dotnet --version`)
-* **SQL Server** — any edition, or LocalDB
-* Windows (the Presentation layer targets `net9.0-windows`)
+| You need | Why | Check it is installed |
+|---|---|---|
+| **Windows 10/11** | The Presentation layer targets `net9.0-windows` (Windows Forms). The app will not run on Linux or macOS. | — |
+| **.NET SDK 9.0** or later — [download](https://dotnet.microsoft.com/download/dotnet/9.0) | Builds and runs all three projects | `dotnet --version` |
+| **SQL Server** — Docker, Express, Developer, or LocalDB | Stores everything | see §3 |
+| **Git** (optional) | To clone the repository | `git --version` |
+| **`sqlcmd`** (optional) | Runs the two `.sql` scripts from the terminal. If you'd rather use a GUI, see §3.3. | `sqlcmd -?` |
+
+Visual Studio 2022 (17.12+) with the *.NET desktop development* workload is optional — the
+`dotnet` CLI is enough for everything below.
+
+### 2.1 Get the code
+
+```bash
+git clone <repository-url> "Mart Management System"
+```
+
+Then `cd` into the folder. Every command in this README is run from that folder — the one
+containing `MiniMartManagementSystem.sln`. (Downloading and extracting the ZIP works too.)
 
 ---
 
-## 3. Database setup
+## 3. Set up the database
 
-**The app is currently configured against the SQL Server 2022 Docker container** defined in
-`D:\docker\sql server\docker-compose.yml`.
+Pick **one** of the two options below, then continue to §3.3 to create the tables.
+
+### 3.1 Option A — SQL Server in Docker (recommended, self-contained)
+
+A ready-made [docker-compose.yml](docker-compose.yml) sits in the repository root. It brings
+up SQL Server 2022 plus **dbgate**, a browser-based database client, so you don't have to
+install anything else.
 
 ```bash
-# Start the stack (SQL Server + dbgate)
-cd "D:/docker/sql server" && docker compose up -d
+docker compose up -d
+```
+
+Wait until the server reports healthy (about 30 seconds on first start):
+
+```bash
+docker compose ps
 ```
 
 | Service | Host endpoint | Credentials |
 |---|---|---|
-| SQL Server 2022 | `localhost,1434` | `sa` / `Heak020507#` |
-| dbgate (web UI) | http://localhost:8080 | connection `sql1` is pre-wired |
+| SQL Server 2022 | `localhost,1434` | `sa` / the `MSSQL_SA_PASSWORD` in the compose file |
+| dbgate (web UI) | http://localhost:3033 | connection `sql1` is pre-wired — no setup needed |
 
-> **Why port 1434, not 1433?** A local **SQL Server 2014** instance is installed on this
-> machine and already owns 1433. It wins for `localhost` connections, which left the
-> container unreachable from Windows even though `docker ps` showed the mapping. The compose
-> file now publishes `1434:1433`. dbgate still reaches the server on `sqlserver:1433` over
-> the internal `sqlnet` bridge, so it was unaffected.
+> 🔐 **Change the SA password before using this anywhere real.** The compose file ships with
+> a development password in plain text. Set your own `MSSQL_SA_PASSWORD` in
+> `docker-compose.yml` **before the first `docker compose up`**, and put the same password in
+> `App.config` (§4). It must be at least 8 characters with upper case, lower case, and a
+> digit or symbol, or the container will refuse to start.
 >
-> The compose file's `MSSQL_SA_PASSWORD` was also corrected to `Heak020507#` — the password
-> the `sql_data` volume was actually initialised with. Changing that variable does **not**
-> reset SA's password on an existing volume, it only feeds the healthcheck, which would
-> otherwise fail and block dbgate from starting.
+> Changing that variable **after** the first start does *not* reset the password — it is
+> baked into the `sql_data` volume. To start over:
+> `docker compose down -v` (this deletes the database), then `docker compose up -d`.
 
-Then run the two scripts in order:
+> **Why is it published on port 1434 instead of the usual 1433?** Because this machine also
+> has a local SQL Server 2014 instance that already owns 1433 — it wins for `localhost`
+> connections, which made the container unreachable from Windows even though `docker ps`
+> showed the mapping. If **you** have nothing on 1433, you can change the mapping to
+> `"1433:1433"` and use `Server=localhost` (no comma) in `App.config`. dbgate is unaffected
+> either way: it reaches the server on `sqlserver:1433` over the internal `sqlnet` bridge.
+
+### 3.2 Option B — an existing SQL Server instance
+
+If you already have SQL Server, LocalDB, or Express installed, skip Docker entirely. You
+only need to know how to address your instance:
+
+| Your setup | Use this server name |
+|---|---|
+| Local default instance | `.` or `localhost` |
+| SQL Server Express | `.\SQLEXPRESS` |
+| LocalDB (ships with Visual Studio) | `(localdb)\MSSQLLocalDB` |
+| A server on your network | `hostname,port` |
+
+Your Windows account needs permission to create a database.
+
+### 3.3 Create the tables and (optionally) load sample data
+
+Run the two scripts **in this order**. `MiniMart_Database_Schema.sql` creates the
+`MiniMartDB` database and all five tables; `MiniMart_SeedData.sql` fills the catalogue.
+
+**With `sqlcmd` — Docker (Option A):**
 
 ```bash
-# 1. Schema (creates MiniMartDB and all five tables)
-sqlcmd -S localhost,1434 -U sa -P 'Heak020507#' -b -i MiniMart_Database_Schema.sql
-
-# 2. Sample catalogue — optional but recommended
-sqlcmd -S localhost,1434 -U sa -P 'Heak020507#' -b -i MiniMart_SeedData.sql
+sqlcmd -S localhost,1434 -U sa -P 'YourPassword' -b -i MiniMart_Database_Schema.sql
 ```
 
-To target a non-Docker instance instead, swap `-S localhost,1434 -U sa -P '…'` for
-`-S . -E` (local default instance), `-S .\SQLEXPRESS -E`, or
-`-S '(localdb)\MSSQLLocalDB' -E`, and update `App.config` to match (§4).
+```bash
+sqlcmd -S localhost,1434 -U sa -P 'YourPassword' -b -i MiniMart_SeedData.sql
+```
 
-The seed script adds **6 categories and 24 products** (5 of them deliberately below their
-reorder level so the Low Stock screen has content). It creates **no user accounts** — see
-*First run* below.
+**With `sqlcmd` — a local instance using Windows authentication (Option B):**
 
-> ⚠️ **Re-running the schema script on an existing database fails.** It drops `Categories`
+```bash
+sqlcmd -S . -E -b -i MiniMart_Database_Schema.sql
+```
+
+```bash
+sqlcmd -S . -E -b -i MiniMart_SeedData.sql
+```
+
+Replace `-S .` with `-S .\SQLEXPRESS` or `-S '(localdb)\MSSQLLocalDB'` as needed.
+
+**Without `sqlcmd` — use a GUI instead:** open dbgate (http://localhost:3033), SQL Server
+Management Studio, or Azure Data Studio; open each `.sql` file; execute
+`MiniMart_Database_Schema.sql` first, then `MiniMart_SeedData.sql`.
+
+**Verify it worked** — this should list five tables:
+
+```bash
+sqlcmd -S localhost,1434 -U sa -P 'YourPassword' -Q "USE MiniMartDB; SELECT name FROM sys.tables ORDER BY name;"
+```
+
+The seed script is optional but recommended: it adds **6 categories and 24 products**, 5 of
+them deliberately below their reorder level so the Low Stock screen has content. It is safe
+to re-run — every insert is guarded by a `NOT EXISTS` check. It creates **no user
+accounts**; you create the first one on first run (§5.1).
+
+> ⚠️ **Re-running the *schema* script on an existing database fails.** It drops `Categories`
 > before `Products`, and the foreign key blocks that. To reset, drop in dependency order
 > first:
 >
@@ -108,36 +198,42 @@ reorder level so the Low Stock screen has content). It creates **no user account
 
 ---
 
-## 4. Connection string
+## 4. Point the app at your database
 
-One central place: **`src/MiniMart.Presentation/App.config`**.
+One central place: **[`src/MiniMart.Presentation/App.config`](src/MiniMart.Presentation/App.config)**.
+Edit the `MiniMartDb` connection string so it matches the database you just set up.
 
 ```xml
 <connectionStrings>
   <add name="MiniMartDb"
-       connectionString="Server=localhost,1434;Database=MiniMartDB;User ID=sa;Password=Heak020507#;TrustServerCertificate=True;..."
+       connectionString="Server=localhost,1434;Database=MiniMartDB;User ID=sa;Password=YourPassword;TrustServerCertificate=True;Application Name=MiniMartManagementSystem;Connect Timeout=15"
        providerName="Microsoft.Data.SqlClient" />
 </connectionStrings>
 ```
 
-| Target | `Server=` value | Auth |
+Only the `Server=` part and the authentication change between setups:
+
+| Target | `Server=` value | Authentication |
 |---|---|---|
-| **Docker container (current)** | `localhost,1434` | `User ID=sa;Password=…` |
+| **Docker container (as shipped)** | `localhost,1434` | `User ID=sa;Password=YourPassword` |
 | Local default instance | `.` | `Trusted_Connection=True` |
 | SQL Server Express | `.\SQLEXPRESS` | `Trusted_Connection=True` |
 | LocalDB | `(localdb)\MSSQLLocalDB` | `Trusted_Connection=True` |
 
-The previous local-instance connection string is kept commented out directly beneath the
-active one in `App.config`, so switching back is a matter of swapping which is commented.
+A local-instance connection string is kept commented out directly beneath the active one in
+`App.config`, so switching between the two is a matter of swapping which one is commented.
 
-`TrustServerCertificate=True` is required because `Microsoft.Data.SqlClient` encrypts by
-default and local instances usually present a self-signed certificate.
+`TrustServerCertificate=True` is required because `Microsoft.Data.SqlClient` encrypts
+connections by default and local/containerised instances present a self-signed certificate.
 
-After deployment this can be edited in `MiniMart.Presentation.dll.config` beside the
-executable — no rebuild needed.
+If the connection string is missing or wrong, the app shows one clear message box on startup
+and exits rather than failing screen by screen.
+
+After deployment this same setting lives in `MiniMart.Presentation.dll.config` beside the
+executable, so a site can be repointed at a different server **without a rebuild**.
 
 `App.config` also holds the store name/address/phone printed on receipts and the currency
-symbol used across the UI.
+symbol used across the UI — edit those too if you like.
 
 ---
 
@@ -145,25 +241,55 @@ symbol used across the UI.
 
 ```bash
 dotnet build MiniMartManagementSystem.sln
+```
+
+```bash
 dotnet run --project src/MiniMart.Presentation
 ```
 
-Or open `MiniMartManagementSystem.sln` in Visual Studio and press F5.
+Or open `MiniMartManagementSystem.sln` in Visual Studio, make **MiniMart.Presentation** the
+startup project, and press <kbd>F5</kbd>.
 
-### First run
+The sign-in window should appear with your server name shown beneath the title. To produce a
+self-contained build for another machine:
 
-There is **no default password anywhere in this project.** On a database with no accounts,
-the app shows a **First-Time Setup** dialog and creates the initial Admin with a password
-you choose. It is stored only as a salted PBKDF2-HMAC-SHA256 hash (100,000 iterations).
+```bash
+dotnet publish src/MiniMart.Presentation -c Release -r win-x64 --self-contained false -o publish
+```
 
-To reset the initial admin, delete the row and restart:
+### 5.1 First run — create the administrator
+
+There is **no default password anywhere in this project.** When the app finds a database with
+no accounts, it opens a **First-Time Setup** dialog and creates the initial Admin with a
+username and password you choose. The password is stored only as a salted
+PBKDF2-HMAC-SHA256 hash (100,000 iterations) — it is never recoverable, only verifiable.
+
+Sign in with that account and you land on the Admin dashboard. From **Users** you can create
+the cashier accounts; a cashier signing in goes straight to the till instead (§6).
+
+To start the account setup over, delete the row and restart the app:
 
 ```sql
 USE MiniMartDB; DELETE FROM dbo.Users WHERE Username = 'admin';
 ```
 
-(A user who has processed sales cannot be deleted this way — the app deactivates such
-accounts instead, so sales history keeps resolving to a real cashier.)
+(A user who has already processed sales cannot be deleted this way — the app deactivates
+such accounts instead, so sales history keeps resolving to a real cashier.)
+
+### 5.2 If something goes wrong
+
+| Symptom | Cause and fix |
+|---|---|
+| "The application is not configured correctly" | The `MiniMartDb` entry is missing from `App.config`. See §4. |
+| A network/instance error naming SQL Server | The server isn't reachable. Docker: `docker compose ps` — is it healthy? Local: is the SQL Server service running, and is TCP/IP enabled in SQL Server Configuration Manager? |
+| "Login failed for user 'sa'" | The password in `App.config` doesn't match the one the container volume was created with. Either use the original password or reset with `docker compose down -v` (deletes all data). |
+| "Cannot open database 'MiniMartDB'" | The schema script hasn't been run yet. See §3.3. |
+| A certificate/trust error | Add `TrustServerCertificate=True` to the connection string. |
+| Container starts then exits | The SA password doesn't meet SQL Server's complexity rules. Check `docker compose logs sqlserver`. |
+| `sqlcmd: command not found` | Use dbgate or SSMS instead (§3.3), or install the SQL Server command-line tools. |
+| Port 1434 already in use | Change the left side of `"1434:1433"` in `docker-compose.yml`, then match it in `App.config`. |
+| `dotnet build` fails on `net9.0-windows` | You're not on Windows, or the .NET 9 SDK isn't installed. Check `dotnet --list-sdks`. |
+| The Low Stock screen is empty | The seed data wasn't loaded. Run `MiniMart_SeedData.sql` (§3.3). |
 
 ---
 
@@ -270,4 +396,3 @@ re-verified through `Microsoft.Data.SqlClient` using the exact connection string
 deployed — 13/13 assertions passed, covering connectivity, the seeded catalogue, password
 hashing and sign-in, a committed checkout with stock decrement, the oversell rollback, and
 the reporting queries. The container database was then reset to a clean seeded state.
-"# mart-management-window-form" 

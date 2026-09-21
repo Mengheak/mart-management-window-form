@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "OZKq+KQFKno=",
+  "dgSpecHash": "5+lOtsup4bc=",
   "success": true,
-  "projectFilePath": "D:\\c#\\MartManagementSystem\\src\\MiniMart.Presentation\\MiniMart.Presentation.csproj",
+  "projectFilePath": "D:\\c#\\Mart Management System\\src\\MiniMart.Presentation\\MiniMart.Presentation.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\USER\\.nuget\\packages\\microsoft.bcl.cryptography\\9.0.13\\microsoft.bcl.cryptography.9.0.13.nupkg.sha512",
     "C:\\Users\\USER\\.nuget\\packages\\microsoft.data.sqlclient\\7.0.2\\microsoft.data.sqlclient.7.0.2.nupkg.sha512",

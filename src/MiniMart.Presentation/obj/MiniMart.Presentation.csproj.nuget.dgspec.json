@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "D:\\c#\\MartManagementSystem\\src\\MiniMart.Presentation\\MiniMart.Presentation.csproj": {}
+    "D:\\c#\\Mart Management System\\src\\MiniMart.Presentation\\MiniMart.Presentation.csproj": {}
   },
   "projects": {
-    "D:\\c#\\MartManagementSystem\\src\\MiniMart.BusinessLogic\\MiniMart.BusinessLogic.csproj": {
+    "D:\\c#\\Mart Management System\\src\\MiniMart.BusinessLogic\\MiniMart.BusinessLogic.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\c#\\MartManagementSystem\\src\\MiniMart.BusinessLogic\\MiniMart.BusinessLogic.csproj",
+        "projectUniqueName": "D:\\c#\\Mart Management System\\src\\MiniMart.BusinessLogic\\MiniMart.BusinessLogic.csproj",
         "projectName": "MiniMart.BusinessLogic",
-        "projectPath": "D:\\c#\\MartManagementSystem\\src\\MiniMart.BusinessLogic\\MiniMart.BusinessLogic.csproj",
+        "projectPath": "D:\\c#\\Mart Management System\\src\\MiniMart.BusinessLogic\\MiniMart.BusinessLogic.csproj",
         "packagesPath": "C:\\Users\\USER\\.nuget\\packages\\",
-        "outputPath": "D:\\c#\\MartManagementSystem\\src\\MiniMart.BusinessLogic\\obj\\",
+        "outputPath": "D:\\c#\\Mart Management System\\src\\MiniMart.BusinessLogic\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -69,14 +69,14 @@
         }
       }
     },
-    "D:\\c#\\MartManagementSystem\\src\\MiniMart.DataAccess\\MiniMart.DataAccess.csproj": {
+    "D:\\c#\\Mart Management System\\src\\MiniMart.DataAccess\\MiniMart.DataAccess.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\c#\\MartManagementSystem\\src\\MiniMart.DataAccess\\MiniMart.DataAccess.csproj",
+        "projectUniqueName": "D:\\c#\\Mart Management System\\src\\MiniMart.DataAccess\\MiniMart.DataAccess.csproj",
         "projectName": "MiniMart.DataAccess",
-        "projectPath": "D:\\c#\\MartManagementSystem\\src\\MiniMart.DataAccess\\MiniMart.DataAccess.csproj",
+        "projectPath": "D:\\c#\\Mart Management System\\src\\MiniMart.DataAccess\\MiniMart.DataAccess.csproj",
         "packagesPath": "C:\\Users\\USER\\.nuget\\packages\\",
-        "outputPath": "D:\\c#\\MartManagementSystem\\src\\MiniMart.DataAccess\\obj\\",
+        "outputPath": "D:\\c#\\Mart Management System\\src\\MiniMart.DataAccess\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -97,8 +97,8 @@
           "net9.0": {
             "targetAlias": "net9.0",
             "projectReferences": {
-              "D:\\c#\\MartManagementSystem\\src\\MiniMart.BusinessLogic\\MiniMart.BusinessLogic.csproj": {
-                "projectPath": "D:\\c#\\MartManagementSystem\\src\\MiniMart.BusinessLogic\\MiniMart.BusinessLogic.csproj"
+              "D:\\c#\\Mart Management System\\src\\MiniMart.BusinessLogic\\MiniMart.BusinessLogic.csproj": {
+                "projectPath": "D:\\c#\\Mart Management System\\src\\MiniMart.BusinessLogic\\MiniMart.BusinessLogic.csproj"
               }
             }
           }
@@ -148,14 +148,14 @@
         }
       }
     },
-    "D:\\c#\\MartManagementSystem\\src\\MiniMart.Presentation\\MiniMart.Presentation.csproj": {
+    "D:\\c#\\Mart Management System\\src\\MiniMart.Presentation\\MiniMart.Presentation.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\c#\\MartManagementSystem\\src\\MiniMart.Presentation\\MiniMart.Presentation.csproj",
+        "projectUniqueName": "D:\\c#\\Mart Management System\\src\\MiniMart.Presentation\\MiniMart.Presentation.csproj",
         "projectName": "MiniMart.Presentation",
-        "projectPath": "D:\\c#\\MartManagementSystem\\src\\MiniMart.Presentation\\MiniMart.Presentation.csproj",
+        "projectPath": "D:\\c#\\Mart Management System\\src\\MiniMart.Presentation\\MiniMart.Presentation.csproj",
         "packagesPath": "C:\\Users\\USER\\.nuget\\packages\\",
-        "outputPath": "D:\\c#\\MartManagementSystem\\src\\MiniMart.Presentation\\obj\\",
+        "outputPath": "D:\\c#\\Mart Management System\\src\\MiniMart.Presentation\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -176,11 +176,11 @@
           "net9.0-windows7.0": {
             "targetAlias": "net9.0-windows",
             "projectReferences": {
-              "D:\\c#\\MartManagementSystem\\src\\MiniMart.BusinessLogic\\MiniMart.BusinessLogic.csproj": {
-                "projectPath": "D:\\c#\\MartManagementSystem\\src\\MiniMart.BusinessLogic\\MiniMart.BusinessLogic.csproj"
+              "D:\\c#\\Mart Management System\\src\\MiniMart.BusinessLogic\\MiniMart.BusinessLogic.csproj": {
+                "projectPath": "D:\\c#\\Mart Management System\\src\\MiniMart.BusinessLogic\\MiniMart.BusinessLogic.csproj"
               },
-              "D:\\c#\\MartManagementSystem\\src\\MiniMart.DataAccess\\MiniMart.DataAccess.csproj": {
-                "projectPath": "D:\\c#\\MartManagementSystem\\src\\MiniMart.DataAccess\\MiniMart.DataAccess.csproj"
+              "D:\\c#\\Mart Management System\\src\\MiniMart.DataAccess\\MiniMart.DataAccess.csproj": {
+                "projectPath": "D:\\c#\\Mart Management System\\src\\MiniMart.DataAccess\\MiniMart.DataAccess.csproj"
               }
             }
           }
