@@ -1,114 +1,106 @@
-# Managing the Data in the Database
+# ការគ្រប់គ្រងទិន្នន័យក្នុង Database
 
-How to add, correct, inspect, back up, and reset the data held in `MiniMartDB`.
+របៀបបន្ថែម, កែ, ពិនិត្យ, backup និង reset ទិន្នន័យក្នុង `MiniMartDB`។ ឯកសារនេះសម្រាប់ Admin, developer ឬអ្នកថែទាំ database។ ការពន្យល់ប្រើភាសាខ្មែរ ដោយរក្សា technical terms, UI labels, SQL និង commands ដដែល។
 
-> Companion documents: [README.md](README.md) = install and run ·
-> [PROJECT_EXPLAINED.md](PROJECT_EXPLAINED.md) = the system in plain language ·
-> [SYSTEM_FLOW.md](SYSTEM_FLOW.md) = the code traced file by file.
+> ឯកសារពាក់ព័ន្ធ៖ [README.md](README.md) សម្រាប់ដំឡើង និង run · [PROJECT_EXPLAINED.md](PROJECT_EXPLAINED.md) ពន្យល់ប្រព័ន្ធងាយយល់ · [SYSTEM_FLOW.md](SYSTEM_FLOW.md) បង្ហាញលំហូរ code។
 
-There are two paths, and they are not equal. **Path 1 — the app — is the one to use for
-everything routine,** because the business rules run there. Path 2 — direct SQL — is for
-reporting the app doesn't cover, bulk edits, corrections it deliberately can't make, and
-backups.
+មានពីរវិធី៖ **ប្រើ app សម្រាប់ការងារប្រចាំថ្ងៃ** ដើម្បីឱ្យ business rules ត្រូវបានអនុវត្ត; ប្រើ **direct SQL** សម្រាប់ queries បន្ថែម, bulk edits, maintenance និង backup ដែល app មិនផ្ដល់។
+
+## ជ្រើសរើសវិធីត្រឹមត្រូវ
+
+| ការងារ | វិធីដែលណែនាំ | ហេតុផល |
+|---|---|---|
+| បន្ថែម ឬកែ Product, Category, User | App | Service validation និង business rules ដំណើរការ |
+| កែ stock របស់ Product មួយ | **Adjust Stock** ក្នុង App | ពិនិត្យ product និង quantity មុន save |
+| មើល Sales និង Reports | App | Query និងការបង្ហាញបានរៀបចំរួច |
+| Report ពិសេស ឬ read-only analysis | SQL query | App មិនមាន report គ្រប់ប្រភេទ |
+| Bulk update | SQL ដោយមាន backup និង SELECT ពិនិត្យជាមុន | លឿនជាងកែម្ដងមួយ ប៉ុន្តែរំលង Service validation |
+| Void/repair Sale | Maintenance SQL ដែលបានពិនិត្យ | App មិនមាន void/refund workflow |
+| Backup/Restore | SQL Server backup tools | រក្សាទិន្នន័យទាំង database និងអាចស្ដារឡើងវិញ |
+| Reset database | Scripts/Docker តែបន្ទាប់ពី backup | ជាសកម្មភាពលុបទិន្នន័យ |
+
+> **ច្បាប់ងាយចាំ៖** បើ app អាចធ្វើការងារនោះបាន សូមប្រើ app។ ប្រើ direct SQL ពេលមានហេតុផលជាក់លាក់ និងត្រូវពិនិត្យ target rows មុន `UPDATE` ឬ `DELETE`។
 
 ---
 
-## 1. Through the app — the normal way
+## 1. គ្រប់គ្រងតាម app
 
-Sign in as **Admin**. Every routine operation is behind a nav button on the dashboard.
+Sign in ជា **Admin** ហើយជ្រើស nav buttons នៅ dashboard។
 
-| Data | Screen | What you can do |
+| ទិន្នន័យ | Screen | អ្វីដែលអាចធ្វើបាន |
 |---|---|---|
-| **Products** | Products | Create, edit (name, SKU, unit price, cost price, reorder level, category), delete, and **Adjust Stock** |
-| **Categories** | Categories | Create, rename, delete |
-| **Users** | Users | Create Admin/Cashier accounts, rename, change role, reset password, deactivate, delete |
-| **Sales** | Sales History & Reports | **Read only** — filter by date range, drill into a receipt's lines, daily totals, best sellers |
-| **Low Stock** | Low Stock | Everything at or below its reorder level |
-| *(new sales)* | Point of Sale | The only way a `Sales` row is ever created |
+| Products | Products | បង្កើត, កែ name, SKU, unit price, cost price, reorder level, category; លុប និង **Adjust Stock** |
+| Categories | Categories | បង្កើត, ប្ដូរឈ្មោះ និងលុប |
+| Users | Users | បង្កើត Admin/Cashier accounts, ប្ដូរ username/role, reset password, deactivate និងលុប |
+| Sales | Sales History & Reports | **Read only**: filter តាម date range, មើល receipt lines, daily totals និង best sellers |
+| Low Stock | Low Stock | មើល products ដែល stock តិចជាង ឬស្មើ reorder level |
+| Sales ថ្មី | Point of Sale | បង្កើត sale តាម checkout ក្នុង app |
 
-The dashboard refreshes its tiles every time one of these windows closes, so the numbers you
-see are never stale.
+ពេល child window បិទ dashboard refresh ទិន្នន័យម្ដងទៀត។ វាមិនមែនជា live update ជាបន្តបន្ទាប់ពីគ្រប់ម៉ាស៊ីនទេ។
 
-### 1.1 Five behaviours that are deliberate
+### 1.1 ឥរិយាបថសំខាន់ប្រាំ
 
-**Adjust Stock sets an absolute number, not a delta.** It is a stock-take: you type what is
-actually on the shelf and the app stores that. (`InventoryService.AdjustStockAsync` →
-`Product.AdjustStockTo`.) It is not "add 12 received units" — work out the new total
-yourself.
+**Adjust Stock កំណត់ចំនួនសរុបថ្មី។** បញ្ចូលចំនួនដែលមានពិតលើធ្នើ។ `InventoryService.AdjustStockAsync` ហៅ `Product.AdjustStockTo`។ បើមាន 20 ហើយទទួលថ្មី 12 ត្រូវបញ្ចូល 32; មុខងារនេះមិនបូក 12 ឱ្យដោយស្វ័យប្រវត្តិទេ។
 
-**Stock can never go negative.** Guarded in three independent places: the model
-(`Product.ReduceStock` / `AdjustStockTo` throw), the checkout SQL
-(`WHERE StockQuantity >= @Quantity`), and the database itself
-(`CHECK (StockQuantity >= 0)`). Even hand-written SQL cannot get past the last one.
+**Stock មិនអាចអវិជ្ជមាន។** មានការការពារនៅ model (`Product.ReduceStock` / `AdjustStockTo`), checkout SQL (`WHERE StockQuantity >= @Quantity`) និង database (`CHECK (StockQuantity >= 0)`)។ Database constraint នៅតែអនុវត្តសម្រាប់ direct SQL។
 
-**"Low stock" means `StockQuantity <= ReorderLevel`** — at the level, not just below it.
-Set `ReorderLevel` per product on the Products screen; that is what drives the Low Stock
-screen and the dashboard tile.
+**Low Stock មានន័យថា `StockQuantity <= ReorderLevel`។** កំណត់ `ReorderLevel` ក្នុង Products screen ដើម្បីគ្រប់គ្រងលទ្ធផល Low Stock និង dashboard count។
 
-**Delete silently becomes deactivate** for any product or user that already appears in a
-sale, so old receipts stay resolvable. The app tells you which of the two happened.
-Categories behave differently again: a category still holding products refuses to be
-deleted and tells you how many are in it.
+**Delete ប្រែជា deactivate ពេលមាន sales history។** Product ឬ user ដែលមានក្នុង sale ត្រូវរក្សាទុកសម្រាប់ receipt references។ App ប្រាប់ថាបាន delete ឬ deactivate។ Category ដែលនៅមាន products មិនអាចលុបបាន ហើយ app ប្រាប់ចំនួន products ដែលនៅសល់។
 
-**You cannot remove the last administrator.** Demoting, deactivating, or deleting an admin
-is blocked when it would leave zero active admins.
+**មិនអាចដក last active Admin បាន។** App រារាំង demote, deactivate ឬ delete បើនឹងធ្វើឱ្យ active Admin នៅសល់ 0។
 
-### 1.2 The one thing the app cannot do: void or refund a sale
+### 1.2 មុខងារមិនទាន់មាន៖ void និង refund
 
-`ISaleRepository` has exactly one write method — `SaveSaleAsync`. There is no void, no
-refund, no line correction, and no way to delete a receipt from any screen. Sales are
-**append-only** by design.
+`ISaleRepository` មាន write method តែ `SaveSaleAsync`។ App មិនមាន void, refund, កែ sale lines ឬ delete receipt តាម UI ទេ។ Sales ត្រូវបានបន្ថែមហើយអានតាម app។
 
-So a mis-scanned sale has to be corrected in SQL — see [§4.1](#41-voiding-a-sale-takes-two-steps).
-Plan for that: it is a genuine gap, not something hidden in a menu.
+ការកែ sale ដែល scan ខុសត្រូវការការងារ maintenance ជាក់លាក់។ មើល [§4.1](#41-voiding-a-sale-takes-two-steps) សម្រាប់ឧទាហរណ៍ SQL និងផលប៉ះពាល់។
 
 ### 1.3 Password rules
 
-Minimum **6 characters** (`User.MinimumPasswordLength`), with no complexity requirement.
-Passwords are stored only as a salted **PBKDF2-HMAC-SHA256** hash, 100,000 iterations, in
-the form `PBKDF2$100000$<base64 salt>$<base64 hash>`. Nothing in the system can recover a
-password — only verify one. Reset from the Users screen by typing a new password into the
-edit dialog; leaving that field blank leaves the existing password untouched.
+Application password ត្រូវមានយ៉ាងហោចណាស់ **6 characters** (`User.MinimumPasswordLength`)។ App មិនកំណត់ complexity rule បន្ថែមទេ។ នេះជាច្បាប់របស់ app account មិនមែន SA account របស់ SQL Server។
+
+Password រក្សាជា salted **PBKDF2-HMAC-SHA256 hash**, 100,000 iterations ក្នុង format `PBKDF2$100000$<base64 salt>$<base64 hash>`។ អាច verify ប៉ុន្តែមិនអាចទាញ password ដើមវិញ។ ក្នុង Users edit dialog បញ្ចូល password ថ្មីដើម្បី reset; ទុក field ទទេដើម្បីរក្សា password ចាស់។
 
 ---
 
-## 2. Direct database access
+## 2. ចូល database ដោយផ្ទាល់
 
-### 2.1 dbgate — already running, no setup
+### 2.1 dbgate ក្នុង Docker stack
 
-The Docker stack includes **dbgate**, a browser-based database client, pre-wired to the
-server:
+ពេល Docker stack ដំណើរការ **dbgate** មាន connection ទៅ SQL Server រៀបចំរួច៖
 
 ```
 http://localhost:3033
 ```
 
-Browse the five tables, edit rows in a grid, run SQL, export results to CSV/JSON/Excel.
+អាច browse tables, កែ rows ក្នុង grid, run SQL និង export results។ ត្រូវជ្រើស database `MiniMartDB`។
 
-### 2.2 SSMS or Azure Data Studio
+### 2.2 ប្រើ SSMS ឬ database client
 
-Connect to `localhost,1434`, SQL Server authentication, user `sa`, with the password from
-`docker-compose.yml`. Tick *Trust server certificate*. For a non-Docker instance use the
-server name from README §3.2 with Windows authentication.
+ភ្ជាប់ទៅ `localhost,1434` ដោយ SQL Server authentication, user `sa` និង password ក្នុង `docker-compose.yml`។ សម្រាប់ local setup ជ្រើស **Trust server certificate** តាម configuration។ បើមិនប្រើ Docker ប្រើ server name ក្នុង README §3.2 និង authentication ដែលបានកំណត់។
 
-### 2.3 sqlcmd — one-off queries from the terminal
+### 2.3 ប្រើ sqlcmd ពី terminal
 
 ```bash
 sqlcmd -S localhost,1434 -U sa -P 'Heak020507#' -d MiniMartDB -Q "SELECT TOP 20 * FROM dbo.Sales ORDER BY SaleId DESC;"
 ```
 
-Useful flags: `-s","` sets the column separator, `-W` trims whitespace, `-h-1` removes
-headers, `-o file.csv` writes to a file. Together they make a passable CSV export:
+ជំនួស development password ក្នុង examples ដោយ password របស់អ្នក។ Flags: `-s","` កំណត់ column separator, `-W` ដក whitespace នៅចុង, `-h-1` ដក headers និង `-o file.csv` សរសេរទៅ file៖
 
 ```bash
 sqlcmd -S localhost,1434 -U sa -P 'Heak020507#' -d MiniMartDB -s"," -W -h-1 -Q "SELECT SaleId, SaleDate, TotalAmount FROM dbo.Sales;" -o sales.csv
 ```
 
+នេះជា text export សាមញ្ញ។ សម្រាប់ data ដែលមាន comma, quote ឬ newline ត្រូវប្រើ CSV exporter ដែលគាំទ្រ escaping ត្រឹមត្រូវ។
+
 ---
 
-## 3. Queries the app does not give you
+## 3. Queries បន្ថែមដែល app មិនផ្ដល់
 
-### 3.1 Inventory valuation
+### 3.1 គណនាតម្លៃ inventory
+
+Query នេះគណនា stock តាម cost price, retail price និង potential margin សម្រាប់ active products៖
 
 ```sql
 SELECT SUM(StockQuantity * CostPrice) AS AtCost,
@@ -118,10 +110,9 @@ FROM dbo.Products
 WHERE IsActive = 1;
 ```
 
-### 3.2 Profit per product
+### 3.2 គណនា margin ប្រហែលតាម product
 
-The app reports **revenue** but never **margin** — `CostPrice` is stored and maintained but
-no screen uses it. This is where to get it:
+App បង្ហាញ revenue ប៉ុន្តែមិនមាន margin report។ `CostPrice` មានរក្សាទុក ហើយអាចប្រើគណនាបាន៖
 
 ```sql
 SELECT p.Name,
@@ -134,10 +125,9 @@ GROUP BY p.Name
 ORDER BY GrossProfit DESC;
 ```
 
-Note this uses `sd.UnitPrice` (the price *at the time of sale*) against `p.CostPrice` (the
-cost *now*) — accurate as long as cost prices are reasonably stable.
+**នេះមិនមែនជា historical net profit ពិតប្រាកដទេ។** `sd.UnitPrice` ជាតម្លៃពេលលក់ ខណៈ `p.CostPrice` ជាតម្លៃ cost បច្ចុប្បន្ន។ Query ក៏មិនដក cart-level discounts ឬចំណាយផ្សេងទៀត។ ដូច្នេះ `GrossProfit` ក្នុងលទ្ធផលគឺការប៉ាន់ស្មានមុន discount ដោយប្រើ current cost។
 
-### 3.3 Takings per cashier
+### 3.3 ចំណូលតាម Cashier
 
 ```sql
 SELECT u.Username,
@@ -150,7 +140,7 @@ GROUP BY u.Username
 ORDER BY Revenue DESC;
 ```
 
-### 3.4 Sales by hour of day — for staffing decisions
+### 3.4 Sales តាមម៉ោងសម្រាប់រៀបចំបុគ្គលិក
 
 ```sql
 SELECT DATEPART(HOUR, SaleDate) AS Hour,
@@ -161,7 +151,9 @@ GROUP BY DATEPART(HOUR, SaleDate)
 ORDER BY Hour;
 ```
 
-### 3.5 Products that have never sold
+Query ប្រមូលតាមម៉ោងនៅគ្រប់ថ្ងៃក្នុងទិន្នន័យ។ បើចង់ពិនិត្យរយៈពេលជាក់លាក់ បន្ថែម date filter។
+
+### 3.5 Products ដែលមិនធ្លាប់លក់
 
 ```sql
 SELECT p.Name, p.SKU, p.StockQuantity
@@ -170,7 +162,9 @@ WHERE p.IsActive = 1
   AND NOT EXISTS (SELECT 1 FROM dbo.SaleDetails sd WHERE sd.ProductId = p.ProductId);
 ```
 
-### 3.6 Reprint data for one receipt
+### 3.6 ទិន្នន័យ receipt មួយ
+
+ឧទាហរណ៍សម្រាប់ `SaleId = 57`; ប្ដូរ ID តាម sale ដែលត្រូវពិនិត្យ៖
 
 ```sql
 SELECT s.SaleId, s.SaleDate, u.Username AS Cashier,
@@ -186,7 +180,7 @@ WHERE s.SaleId = 57;
 
 ### 3.7 Bulk edits
 
-A 5% price rise across one category — tedious one product at a time in the UI:
+បង្កើន unit price 5% សម្រាប់ category មួយ៖
 
 ```sql
 UPDATE p
@@ -196,24 +190,23 @@ JOIN dbo.Categories c ON c.CategoryId = p.CategoryId
 WHERE c.Name = N'Beverages';
 ```
 
-Set a sensible reorder level everywhere it was left at the default:
+កំណត់ reorder level ទៅ 10 សម្រាប់ products ដែលនៅមានតម្លៃ 5៖
 
 ```sql
 UPDATE dbo.Products SET ReorderLevel = 10 WHERE ReorderLevel = 5;
 ```
 
-Bulk-import products from a staging table or `VALUES` list is fine too — just respect
-`UQ_Products_SKU` and supply a valid `CategoryId`.
+មុន execute bulk UPDATE ត្រូវពិនិត្យ rows ដោយ SELECT និង filter ដូចគ្នា។ Bulk import ពី staging table ឬ `VALUES` list ត្រូវគោរព `UQ_Products_SKU` និងប្រើ `CategoryId` ដែលមានពិត។
 
 ---
 
-## 4. Correcting data by hand — four cautions
+## 4. កែទិន្នន័យដោយដៃ៖ ចំណុចត្រូវយល់
 
-### 4.1 Voiding a sale takes two steps
+<a id="41-voiding-a-sale-takes-two-steps"></a>
 
-Deleting the `Sales` row cascades to its `SaleDetails` (the foreign key is
-`ON DELETE CASCADE`), **but it does not put the stock back.** Nothing in the schema reverses
-the decrement. Do both, in one transaction, or your stock figures drift:
+### 4.1 Void sale ត្រូវដោះស្រាយទាំង stock និង receipt
+
+ការលុប row ក្នុង `Sales` នឹងលុប `SaleDetails` តាម `ON DELETE CASCADE` ប៉ុន្តែ **មិនបន្ថែម stock ត្រឡប់វិញ**។ បើការកែនេះមានន័យថាទំនិញត្រឡប់ចូល stock វាត្រូវធ្វើទាំងពីរក្នុង transaction។ ឧទាហរណ៍ដើមខាងក្រោមសម្រាប់ maintenance ដែលគ្មាន checkout ឬការកែទិន្នន័យដំណាលគ្នា និងមានមួយ line ក្នុងមួយ product៖
 
 ```sql
 BEGIN TRAN;
@@ -231,112 +224,91 @@ BEGIN TRAN;
 COMMIT;
 ```
 
-Check it first with `SELECT` and the same `WHERE`, and keep a note of what you voided — the
-schema has no audit table, so a deleted sale leaves no trace.
+ពិនិត្យ `SaleId`, quantities និងទំនិញដែលត្រឡប់ពិតប្រាកដជាមុន។ រក្សា backup និងកំណត់ត្រាការកែ ព្រោះ schema គ្មាន audit table ហើយ deleted sale មិននៅក្នុង history ទៀត។ ឧទាហរណ៍នេះមិនមែនជា refund workflow ពេញលេញ ឬ script សម្រាប់ multi-user production maintenance ទេ។
 
-An alternative that keeps history intact is to record a **compensating sale** rather than
-delete: it keeps the audit trail honest, but the schema has no negative-quantity support
-(`CHECK (Quantity > 0)`), so this needs a schema change to do properly. Deleting is the
-practical option today.
+ការរក្សា history ដោយប្រើ reversal/refund record ត្រូវការការរចនាបន្ថែម។ Schema បច្ចុប្បន្នមាន `CHECK (Quantity > 0)` ដូច្នេះមិនអាចបញ្ចូល negative-quantity compensating sale ដោយផ្ទាល់បានទេ។
 
-### 4.2 Never hand-edit `Users.PasswordHash`
+### 4.2 កុំវាយ password ទៅក្នុង `Users.PasswordHash`
 
-Only `Pbkdf2PasswordHasher` can produce a valid value. A malformed hash does not raise an
-error — `Verify` returns `false` for anything it cannot parse, so the effect is simply that
-every sign-in for that account fails, with no clue why.
+`PasswordHash` ត្រូវមាន format ដែល `Pbkdf2PasswordHasher` អាច verify បាន។ Hash ដែលខូចអាចធ្វើឱ្យ `Verify` ត្រឡប់ `false` ហើយ account sign in មិនបាន។ ប្រើ **Users** screen ដើម្បី reset password។
 
-Reset passwords through the **Users** screen. To recover a completely locked-out system,
-delete the admin row and let first-run setup recreate it:
+ឧទាហរណ៍ដើមខាងក្រោមគឺការលុប user row ឈ្មោះ `admin` ប៉ុណ្ណោះ៖
 
 ```sql
 DELETE FROM dbo.Users WHERE Username = 'admin';
 ```
 
-If that user has processed sales the foreign key on `Sales.CashierId` will block the delete —
-in that case set `IsActive = 0`, create a fresh admin, or restore from a backup.
+**កុំចាត់ទុកវាជាវិធី recovery ទូទៅ។** First-Time Setup បើកតែពេល `Users` table ទទេទាំងស្រុង។ បើនៅមាន users ផ្សេង ការលុប ឬ deactivate Admin មិនបើក setup ទេ។ បើ Admin មាន sales history foreign key នឹងរារាំងការលុប។ ប្រើ active Admin ផ្សេងដើម្បី reset password; បើគ្មាន ត្រូវការការងារ recovery ដែលបង្កើត valid hash ត្រឹមត្រូវ ឬ restore backup ដែលអាចប្រើបាន ដោយរក្សា user IDs និង sales references។
 
-### 4.3 Editing stock directly bypasses the model's guards
+### 4.3 Direct stock edit រំលង model validation
 
-The database `CHECK (StockQuantity >= 0)` still protects you, but `Product.AdjustStockTo`'s
-validation does not run. Use the **Adjust Stock** screen for anything routine; reserve SQL
-for bulk corrections.
+Database `CHECK (StockQuantity >= 0)` នៅតែដំណើរការ ប៉ុន្តែ `Product.AdjustStockTo` មិនត្រូវបានហៅទេ។ ប្រើ **Adjust Stock** សម្រាប់ការងារប្រចាំថ្ងៃ និង SQL សម្រាប់ bulk corrections ដែលបានពិនិត្យ។
 
-### 4.4 Deactivating vs. deleting — know which you want
+### 4.4 Deactivate និង delete ខុសគ្នា
 
-`IsActive = 0` on a product means it disappears from the till (`GetBySkuAsync` filters
-`AND p.IsActive = 1`) and from the dashboard's active-product count, but stays fully
-resolvable in sales history. That is almost always what you want for a discontinued line.
-Actual deletion is only possible for products that have never sold.
+`IsActive = 0` ធ្វើឱ្យ product មិនអាច scan នៅ POS (`GetBySkuAsync` មាន `AND p.IsActive = 1`) និងមិនរាប់ក្នុង active product count។ Row នៅតែអាច reference ក្នុង sales history។ Products ដែលធ្លាប់លក់មិនអាច hard delete ព្រោះមាន foreign key references។
 
 ---
 
-## 5. Backup and restore
+## 5. Backup និង restore
 
-The data lives in the `sql_data` Docker volume. It survives `docker compose down` and
-`docker compose restart` — but **`docker compose down -v` destroys it permanently.** Take
-real backups.
+Docker រក្សាទិន្នន័យក្នុង `sql_data` volume។ `docker compose down` និង `docker compose restart` មិនលុបវា ប៉ុន្តែ **`docker compose down -v` លុប volumes និងទិន្នន័យក្នុងនោះ**។ Volume មិនមែនជា backup ជំនួសទេ។
 
-### 5.1 Back up
+### 5.1 បង្កើត backup
 
 ```bash
 sqlcmd -S localhost,1434 -U sa -P 'Heak020507#' -Q "BACKUP DATABASE MiniMartDB TO DISK='/var/opt/mssql/data/MiniMartDB.bak' WITH INIT, COMPRESSION;"
 ```
 
-The path is *inside the container*. Copy it out to the host so it survives the volume:
+Path ខាងលើនៅ **ក្នុង container**។ បង្កើត folder `backups` លើ host ជាមុន រួច copy file ចេញ៖
 
 ```bash
 docker cp sql1:/var/opt/mssql/data/MiniMartDB.bak ./backups/MiniMartDB.bak
 ```
 
-For a non-Docker instance, back up to any local path the SQL Server service account can
-write, e.g. `TO DISK='C:\Backups\MiniMartDB.bak'`.
+សម្រាប់ non-Docker instance ប្រើ path ដែល SQL Server service account មាន permission សរសេរ ដូចជា `TO DISK='C:\Backups\MiniMartDB.bak'`។ `WITH INIT` សរសេរជំនួស backup file ដូច្នេះគួររក្សា copies មានកាលបរិច្ឆេទ ដើម្បីមានច្រើន versions។
 
-### 5.2 Restore
+### 5.2 Restore ពី backup
 
-Copy the file back into the container, then restore over the existing database:
+Copy backup ចូល container៖
 
 ```bash
 docker cp ./backups/MiniMartDB.bak sql1:/var/opt/mssql/data/MiniMartDB.bak
 ```
 
+បន្ទាប់មក restore លើ database ដែលមានស្រាប់៖
+
 ```bash
 sqlcmd -S localhost,1434 -U sa -P 'Heak020507#' -Q "ALTER DATABASE MiniMartDB SET SINGLE_USER WITH ROLLBACK IMMEDIATE; RESTORE DATABASE MiniMartDB FROM DISK='/var/opt/mssql/data/MiniMartDB.bak' WITH REPLACE; ALTER DATABASE MiniMartDB SET MULTI_USER;"
 ```
 
-Close the app first — `SET SINGLE_USER` kicks off any open connection, and `RESTORE` fails
-outright if one is still attached.
+បិទ app និង connections ផ្សេងជាមុន។ `SINGLE_USER WITH ROLLBACK IMMEDIATE` បញ្ចប់ connections/transactions ដែលកំពុងប្រើ database។ **`WITH REPLACE` សរសេរជំនួស database បច្ចុប្បន្ន** ដូច្នេះការផ្លាស់ប្ដូរក្រោយ backup នឹងមិននៅសល់។ បើ restore បរាជ័យ ពិនិត្យ database state និងស្ដារ `MULTI_USER` តាមសមស្រប។
 
-### 5.3 What to back up, and when
+### 5.3 ត្រូវ backup អ្វី និងពេលណា?
 
-The whole database is small (five tables, no blobs), so there is no reason to do anything
-clever. A daily full backup kept off the machine is sufficient. `Sales` and `SaleDetails`
-are the only truly irreplaceable tables — products and categories can be rebuilt from the
-seed script, and users can be recreated by hand.
+Backup **database ទាំងមូល** រួមទាំង tables ទាំង 5។ Sample seed script មិនអាចស្ដារ products ដែលអ្នកបន្ថែម, prices ដែលកែ, stock ពិត ឬ user accounts ដែលមានស្រាប់បានទេ។
+
+អាចចាប់ផ្ដើមពី daily full backup ហើយកែ frequency តាមបរិមាណទិន្នន័យដែលអាចទទួលយកការបាត់បង់បាន។ រក្សា copy នៅទីតាំងដាច់ពីម៉ាស៊ីន database និងសាកល្បង restore ទៅ test database។
 
 ---
 
-## 6. Resetting to a clean state
+## 6. Reset ទិន្នន័យ
 
-**Top up the catalogue, keep everything else.** `MiniMart_SeedData.sql` is safe to re-run at
-any time — every insert is guarded by `NOT EXISTS`, so it adds what is missing and
-duplicates nothing:
+**បន្ថែម sample catalogue ដែលខ្វះ ដោយមិនលុប data ផ្សេង៖** Seed script ប្រើ `NOT EXISTS` ដើម្បីជៀស duplicate inserts។ វាមិន reset prices ឬ stock របស់ rows ដែលមានស្រាប់ទេ។
 
 ```bash
 sqlcmd -S localhost,1434 -U sa -P 'Heak020507#' -b -i MiniMart_SeedData.sql
 ```
 
-**Clear the sales history, keep products and users:**
+**លុប sales history ដោយរក្សា products និង users៖**
 
 ```sql
 DELETE FROM dbo.Sales;   -- SaleDetails cascade
 ```
 
-(This does **not** restore stock — see §4.1. After wiping sales, re-run a stock-take or
-reset quantities with the seed values.)
+វាលុប sale lines តាម cascade ហើយ **មិនស្ដារ stock**។ ក្រោយលុបត្រូវធ្វើ stock-take និងកែ quantities ដោយចេតនា។ ការ run seed script ម្ដងទៀតមិន reset existing stock ទេ។
 
-**Full wipe.** `MiniMart_Database_Schema.sql` drops and recreates all five tables, losing
-everything. It only works if you drop in foreign-key order first — the script drops
-`Categories` before `Products`, which the FK blocks:
+**Reset tables ទាំងអស់៖** Schema script មាន DROP/CREATE ហើយនឹងបាត់ទិន្នន័យ។ ដោយសារវា drop `Categories` មុន `Products` ត្រូវ drop តាម foreign-key order ជាមុន៖
 
 ```sql
 USE MiniMartDB;
@@ -347,29 +319,27 @@ IF OBJECT_ID('dbo.Users','U')       IS NOT NULL DROP TABLE dbo.Users;
 IF OBJECT_ID('dbo.Categories','U')  IS NOT NULL DROP TABLE dbo.Categories;
 ```
 
-Then run the schema script, then the seed script, then launch the app — it will ask you to
-create the first admin again.
+រួច run schema script, run seed script និងបើក app ដើម្បីបង្កើត Admin ថ្មី។
 
-**Nuclear option** (Docker only): `docker compose down -v && docker compose up -d` throws
-away the volume and gives you a brand-new empty server. You then re-run both scripts.
+**Reset Docker volumes ទាំងស្រុង៖** `docker compose down -v` រួច `docker compose up -d` បង្កើត server ទទេថ្មី។ វាលុប named volumes របស់ stack រួមទាំង database និង dbgate data។ ត្រូវ run scripts ឡើងវិញ។
 
 ---
 
-## 7. What the database enforces regardless of how you edit it
+## 7. Constraints ដែល database អនុវត្តជានិច្ច
 
-Worth knowing, because these hold even for hand-written SQL and dbgate grid edits:
+Constraints ទាំងនេះអនុវត្តទោះកែពី app, SQL ឬ dbgate grid ក៏ដោយ៖
 
 | Rule | Constraint |
 |---|---|
-| Category names are unique | `UQ_Categories_Name` |
-| SKUs are unique | `UQ_Products_SKU` |
-| Usernames are unique | `UQ_Users_Username` |
-| A role is only `Admin` or `Cashier` | `CK_Users_Role` |
-| Stock, prices, totals, paid, change are never negative | `CK_Products_*`, `CK_Sales_*` |
-| A sale line quantity is always > 0 | `CK_SaleDetails_Quantity` |
-| A product must belong to a real category | `FK_Products_Categories` |
-| A sale must belong to a real user | `FK_Sales_Users` |
-| Deleting a sale removes its lines | `FK_SaleDetails_Sales ... ON DELETE CASCADE` |
-| A product in any sale line cannot be deleted | `FK_SaleDetails_Products` (no cascade — this is why soft delete exists) |
+| Category names ត្រូវ unique | `UQ_Categories_Name` |
+| SKUs ត្រូវ unique | `UQ_Products_SKU` |
+| Usernames ត្រូវ unique | `UQ_Users_Username` |
+| Role ជា `Admin` ឬ `Cashier` | `CK_Users_Role` |
+| Stock, prices, totals, paid និង change មិនអវិជ្ជមាន | `CK_Products_*`, `CK_Sales_*` |
+| Sale line quantity ត្រូវ > 0 | `CK_SaleDetails_Quantity` |
+| Product ត្រូវ reference category ដែលមានពិត | `FK_Products_Categories` |
+| Sale ត្រូវ reference user ដែលមានពិត | `FK_Sales_Users` |
+| លុប sale នឹងលុប lines | `FK_SaleDetails_Sales ... ON DELETE CASCADE` |
+| Product ដែលមាន sale line reference មិនអាចលុប | `FK_SaleDetails_Products` គ្មាន cascade |
 
-Full definitions in [MiniMart_Database_Schema.sql](MiniMart_Database_Schema.sql).
+មើល definitions ពេញលេញក្នុង [MiniMart_Database_Schema.sql](MiniMart_Database_Schema.sql)។

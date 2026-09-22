@@ -1,19 +1,27 @@
 # Mart Management System
 
-A C# **Windows Forms** desktop POS and inventory application built on a strict **3-Tier
-Architecture** with **ADO.NET** against **SQL Server**, implementing the design set out in
-`Mini_Mart_Management_System_Documentation.docx` and the schema in
-`MiniMart_Database_Schema.sql`.
+កម្មវិធី desktop POS និងការគ្រប់គ្រង stock ដែលសរសេរដោយ C# **Windows Forms**។ គម្រោងនេះប្រើ **3-Tier Architecture**, **ADO.NET** និង **SQL Server** ដោយផ្អែកលើការរចនាក្នុង `Mini_Mart_Management_System_Documentation.docx` និង schema ក្នុង `MiniMart_Database_Schema.sql`។
 
-**Documentation:** this file covers installation and setup ·
-[PROJECT_EXPLAINED.md](PROJECT_EXPLAINED.md) explains the system in plain language ·
-[DATA_MANAGEMENT.md](DATA_MANAGEMENT.md) covers editing, querying, backing up and resetting
-the data · [SYSTEM_FLOW.md](SYSTEM_FLOW.md) traces the code file by file.
+ឯកសារនេះសម្រាប់អ្នកដែលចង់ដំឡើង និងបើកកម្មវិធី។ បើចង់យល់ពី source code មុន សូមអាន [PROJECT_EXPLAINED.md](PROJECT_EXPLAINED.md)។
 
-### Quick start
+## ផែនទីឯកសារ
 
-Windows + [.NET SDK 9](https://dotnet.microsoft.com/download/dotnet/9.0) + Docker, from the
-repository root:
+| ឯកសារ | គួរអាននៅពេលណា? | អ្វីដែលទទួលបាន |
+|---|---|---|
+| **README.md** | ចង់ install, configure និង run | Prerequisites, database setup, connection string, build និង troubleshooting |
+| [PROJECT_EXPLAINED.md](PROJECT_EXPLAINED.md) | ចង់យល់ប្រព័ន្ធទាំងមូលជាមុន | Architecture, tables, user flow និងគំនិត OOP ជាភាសាសាមញ្ញ |
+| [SYSTEM_FLOW.md](SYSTEM_FLOW.md) | ចង់តាមដាន source code | Class, method និងលំហូរពី UI ទៅ SQL |
+| [DATA_MANAGEMENT.md](DATA_MANAGEMENT.md) | ចង់គ្រប់គ្រងទិន្នន័យ | App operations, SQL queries, backup, restore និង reset |
+
+**លំដាប់អានដែលណែនាំ៖** `PROJECT_EXPLAINED.md` → `README.md` → `SYSTEM_FLOW.md` → `DATA_MANAGEMENT.md`។ អ្នកដែលគ្រាន់តែចង់ប្រើកម្មវិធី អាចអានតែ README និង DATA_MANAGEMENT បាន។
+
+## របៀបប្រើពាក្យក្នុងឯកសារ
+
+ការពន្យល់សរសេរជាភាសាខ្មែរ ប៉ុន្តែរក្សា technical terms ដូចជា **Repository**, **Service**, **Transaction**, **SQL Server**, **DTO**, **CRUD** និង **Dependency Injection** ជាភាសាអង់គ្លេស។ ឈ្មោះ UI ដូចជា **Products**, **Users**, **Adjust Stock**, class/method names, code, commands និង file paths ក៏រក្សាដដែល ដើម្បីឱ្យអាចស្វែងរកក្នុងកម្មវិធី និង source code បានត្រឹមត្រូវ។
+
+## ចាប់ផ្ដើមប្រើប្រាស់រហ័ស
+
+ត្រូវមាន Windows + [.NET SDK 9](https://dotnet.microsoft.com/download/dotnet/9.0) + Docker។ ដំណើរការ commands ខាងក្រោមពី repository root បន្ទាប់ពី SQL Server រួចរាល់៖
 
 ```bash
 docker compose up -d
@@ -22,13 +30,23 @@ sqlcmd -S localhost,1434 -U sa -P 'Heak020507#' -b -i MiniMart_SeedData.sql
 dotnet run --project src/MiniMart.Presentation
 ```
 
-The app asks you to create the first admin account on first launch. Full instructions,
-including how to use an existing SQL Server instead of Docker and how to change that
-password, are in §2–§5.
+ពេលបើកដំបូង កម្មវិធីនឹងឱ្យអ្នកបង្កើត Admin account។ ផ្នែក §2–§5 មានការណែនាំលម្អិត រួមទាំងការប្រើ SQL Server ដែលមានស្រាប់ និងការប្ដូរ password។ Password ក្នុង command ខាងលើគឺសម្រាប់ development setup ដែលភ្ជាប់មកជាមួយគម្រោង ហើយគួរប្ដូរមុនប្រើប្រាស់ជាក់ស្ដែង។
+
+លំហូរសង្ខេបគឺ៖
+
+```text
+Install prerequisites
+  → Start SQL Server
+  → Run schema script
+  → Run seed script (optional)
+  → Configure App.config
+  → Build and run
+  → Create the first Admin account
+```
 
 ---
 
-## 1. Solution layout
+## 1. រចនាសម្ព័ន្ធ Solution
 
 ```
 MiniMartManagementSystem.sln
@@ -38,7 +56,7 @@ MiniMartManagementSystem.sln
     └── MiniMart.Presentation/      net9.0-windows — Windows Forms UI
 ```
 
-### Reference graph
+### ទំនាក់ទំនងរវាង projects
 
 ```
   Presentation  ──>  BusinessLogic
@@ -46,61 +64,49 @@ MiniMartManagementSystem.sln
        └──> DataAccess ───┘
 ```
 
-* `MiniMart.BusinessLogic` — `Models/` (Product, Category, CartItem, Cart, Sale, SaleDetail,
-  User), `Repositories/` (the `I*Repository` contracts), `Services/`, `Discounts/`,
-  `Security/`, `Exceptions/`, `Reporting/`. **No ADO.NET, no WinForms.**
-* `MiniMart.DataAccess` — `ProductRepository`, `SaleRepository`, `CategoryRepository`,
-  `UserRepository`, plus the connection factory. **No WinForms.**
-* `MiniMart.Presentation` — forms only. Contains no SQL and no transaction handling.
+- `MiniMart.BusinessLogic` មាន `Models/` (Product, Category, CartItem, Cart, Sale, SaleDetail, User), `Repositories/` (contracts `I*Repository`), `Services/`, `Discounts/`, `Security/`, `Exceptions/` និង `Reporting/`។ **មិនប្រើ ADO.NET ឬ WinForms ទេ។**
+- `MiniMart.DataAccess` មាន `ProductRepository`, `SaleRepository`, `CategoryRepository`, `UserRepository` និង connection factory។ **មិនមាន WinForms ទេ។**
+- `MiniMart.Presentation` មាន forms សម្រាប់ UI។ មិនសរសេរ SQL ឬគ្រប់គ្រង transaction ក្នុង forms ទេ។
 
-> **Note on interface placement.** The repository *interfaces* live in `BusinessLogic`
-> rather than `DataAccess`. Putting the contracts in `DataAccess` while the domain models
-> live in `BusinessLogic` is circular — `SaleService` needs `ISaleRepository`, and
-> `SaleRepository` needs `Sale`. This is the standard Dependency Inversion resolution and
-> keeps the layer count at three. The Business Logic Layer still depends only on
-> abstractions, exactly as Chapter 2.3.2 requires.
+> **ហេតុអ្វី repository interfaces នៅក្នុង `BusinessLogic`?** `SaleService` ត្រូវការ `ISaleRepository` ហើយ `SaleRepository` ត្រូវការ `Sale`។ បើដាក់ interfaces ក្នុង `DataAccess` នឹងបង្កើត circular dependency។ ការដាក់ contracts ក្នុង `BusinessLogic` ជាវិធី **Dependency Inversion** ដែលរក្សា 3 layers ហើយឱ្យ Business Logic Layer ពឹងផ្អែកតែលើ abstractions ស្របតាម Chapter 2.3.2។
 
 ---
 
-## 2. Install the prerequisites
+## 2. ដំឡើង prerequisites
 
-| You need | Why | Check it is installed |
+| អ្វីដែលត្រូវមាន | គោលបំណង | របៀបពិនិត្យ |
 |---|---|---|
-| **Windows 10/11** | The Presentation layer targets `net9.0-windows` (Windows Forms). The app will not run on Linux or macOS. | — |
-| **.NET SDK 9.0** or later — [download](https://dotnet.microsoft.com/download/dotnet/9.0) | Builds and runs all three projects | `dotnet --version` |
-| **SQL Server** — Docker, Express, Developer, or LocalDB | Stores everything | see §3 |
-| **Git** (optional) | To clone the repository | `git --version` |
-| **`sqlcmd`** (optional) | Runs the two `.sql` scripts from the terminal. If you'd rather use a GUI, see §3.3. | `sqlcmd -?` |
+| **Windows 10/11** | Presentation ប្រើ `net9.0-windows` និង Windows Forms; កម្មវិធីនេះមិនដំណើរការលើ Linux ឬ macOS ទេ | — |
+| **.NET SDK 9.0** ឬ SDK ដែលអាច build target នេះបាន — [Download](https://dotnet.microsoft.com/download/dotnet/9.0) | Build និង run projects ទាំងបី | `dotnet --version` |
+| **SQL Server** — Docker, Express, Developer ឬ LocalDB | រក្សាទុកទិន្នន័យ | មើល §3 |
+| **Git** (មិនចាំបាច់) | Clone repository | `git --version` |
+| **`sqlcmd`** (មិនចាំបាច់) | ដំណើរការ `.sql` scripts ពី terminal; អាចប្រើ GUI ក្នុង §3.3 ជំនួស | `sqlcmd -?` |
 
-Visual Studio 2022 (17.12+) with the *.NET desktop development* workload is optional — the
-`dotnet` CLI is enough for everything below.
+អាចប្រើ Visual Studio 2022 (17.12+) ជាមួយ workload **.NET desktop development**។ បើមិនប្រើ Visual Studio ទេ `dotnet` CLI គ្រប់គ្រាន់សម្រាប់ជំហានខាងក្រោម។
 
-### 2.1 Get the code
+### 2.1 ទាញយក source code
 
 ```bash
 git clone <repository-url> "Mart Management System"
 ```
 
-Then `cd` into the folder. Every command in this README is run from that folder — the one
-containing `MiniMartManagementSystem.sln`. (Downloading and extracting the ZIP works too.)
+ជំនួស `<repository-url>` ដោយ URL របស់ repository រួចប្រើ `cd` ចូល folder ដែលមាន `MiniMartManagementSystem.sln`។ Commands ក្នុង README នេះដំណើរការពី folder នោះ។ អ្នកក៏អាច Download និង extract ZIP បានដែរ។
 
 ---
 
-## 3. Set up the database
+## 3. រៀបចំ database
 
-Pick **one** of the two options below, then continue to §3.3 to create the tables.
+ជ្រើសរើស **មួយ** ក្នុងចំណោមជម្រើសខាងក្រោម រួចបន្តទៅ §3.3 ដើម្បីបង្កើត tables។
 
-### 3.1 Option A — SQL Server in Docker (recommended, self-contained)
+### 3.1 ជម្រើស A — SQL Server ក្នុង Docker
 
-A ready-made [docker-compose.yml](docker-compose.yml) sits in the repository root. It brings
-up SQL Server 2022 plus **dbgate**, a browser-based database client, so you don't have to
-install anything else.
+[docker-compose.yml](docker-compose.yml) នៅ repository root រៀបចំ SQL Server 2022 និង **dbgate** ដែលជា database client ប្រើតាម browser។ ត្រូវឱ្យ Docker ដំណើរការជាមុន។
 
 ```bash
 docker compose up -d
 ```
 
-Wait until the server reports healthy (about 30 seconds on first start):
+រង់ចាំឱ្យ server មាន status `healthy`។ ការចាប់ផ្ដើមដំបូងអាចចំណាយប្រហែល 30 វិនាទី ឬយូរជាងនេះ៖
 
 ```bash
 docker compose ps
@@ -108,46 +114,33 @@ docker compose ps
 
 | Service | Host endpoint | Credentials |
 |---|---|---|
-| SQL Server 2022 | `localhost,1434` | `sa` / the `MSSQL_SA_PASSWORD` in the compose file |
-| dbgate (web UI) | http://localhost:3033 | connection `sql1` is pre-wired — no setup needed |
+| SQL Server 2022 | `localhost,1434` | `sa` / តម្លៃ `MSSQL_SA_PASSWORD` ក្នុង compose file |
+| dbgate (web UI) | http://localhost:3033 | connection `sql1` បានរៀបចំរួច |
 
-> 🔐 **Change the SA password before using this anywhere real.** The compose file ships with
-> a development password in plain text. Set your own `MSSQL_SA_PASSWORD` in
-> `docker-compose.yml` **before the first `docker compose up`**, and put the same password in
-> `App.config` (§4). It must be at least 8 characters with upper case, lower case, and a
-> digit or symbol, or the container will refuse to start.
+> **ប្ដូរ SA password មុនប្រើប្រាស់ជាក់ស្ដែង។** Compose file មាន development password ជា plain text។ កំណត់ `MSSQL_SA_PASSWORD` ក្នុង `docker-compose.yml` **មុន `docker compose up` លើកដំបូង** ហើយប្រើ password ដូចគ្នាក្នុង `App.config` (§4) និង dbgate connection configuration។ Password ត្រូវបំពេញ complexity rules របស់ SQL Server; password ខ្លី ឬសាមញ្ញពេកអាចធ្វើឱ្យ container មិនចាប់ផ្ដើម។
 >
-> Changing that variable **after** the first start does *not* reset the password — it is
-> baked into the `sql_data` volume. To start over:
-> `docker compose down -v` (this deletes the database), then `docker compose up -d`.
+> ការប្ដូរ environment variable នេះក្រោយពេលបង្កើត `sql_data` volume មិន reset password ដែលមានស្រាប់ទេ។ `docker compose down -v` រួច `docker compose up -d` អាចចាប់ផ្ដើមថ្មី ប៉ុន្តែ **វាលុបទិន្នន័យក្នុង volumes**។
 
-> **Why is it published on port 1434 instead of the usual 1433?** Because this machine also
-> has a local SQL Server 2014 instance that already owns 1433 — it wins for `localhost`
-> connections, which made the container unreachable from Windows even though `docker ps`
-> showed the mapping. If **you** have nothing on 1433, you can change the mapping to
-> `"1433:1433"` and use `Server=localhost` (no comma) in `App.config`. dbgate is unaffected
-> either way: it reaches the server on `sqlserver:1433` over the internal `sqlnet` bridge.
+> **ហេតុអ្វីប្រើ port 1434?** Setup ដើមមាន local SQL Server 2014 ដែលប្រើ port 1433 រួច។ Mapping `1434:1433` ជៀសវាងការប៉ះទង្គិចនេះ។ បើ port 1433 ទំនេរ អាចប្ដូរទៅ `"1433:1433"` ហើយប្រើ `Server=localhost` ក្នុង `App.config`។ dbgate នៅតែភ្ជាប់ទៅ `sqlserver:1433` តាម internal `sqlnet` bridge។
 
-### 3.2 Option B — an existing SQL Server instance
+### 3.2 ជម្រើស B — SQL Server instance ដែលមានស្រាប់
 
-If you already have SQL Server, LocalDB, or Express installed, skip Docker entirely. You
-only need to know how to address your instance:
+បើមាន SQL Server, LocalDB ឬ Express រួច អាចរំលង Docker ហើយប្រើ server name ដែលសមស្រប៖
 
-| Your setup | Use this server name |
+| Setup | Server name |
 |---|---|
-| Local default instance | `.` or `localhost` |
+| Local default instance | `.` ឬ `localhost` |
 | SQL Server Express | `.\SQLEXPRESS` |
-| LocalDB (ships with Visual Studio) | `(localdb)\MSSQLLocalDB` |
-| A server on your network | `hostname,port` |
+| LocalDB ជាមួយ Visual Studio | `(localdb)\MSSQLLocalDB` |
+| Server ក្នុង network | `hostname,port` |
 
-Your Windows account needs permission to create a database.
+Windows account ដែលប្រើត្រូវមាន permission បង្កើត database។
 
-### 3.3 Create the tables and (optionally) load sample data
+### 3.3 បង្កើត tables និងបញ្ចូល sample data
 
-Run the two scripts **in this order**. `MiniMart_Database_Schema.sql` creates the
-`MiniMartDB` database and all five tables; `MiniMart_SeedData.sql` fills the catalogue.
+ដំណើរការ scripts **តាមលំដាប់នេះ**៖ `MiniMart_Database_Schema.sql` បង្កើត `MiniMartDB` និង tables ចំនួន 5; `MiniMart_SeedData.sql` បញ្ចូល sample catalogue។
 
-**With `sqlcmd` — Docker (Option A):**
+**ប្រើ `sqlcmd` ជាមួយ Docker (ជម្រើស A)៖** ជំនួស `YourPassword` ដោយ password ដែលបានកំណត់។
 
 ```bash
 sqlcmd -S localhost,1434 -U sa -P 'YourPassword' -b -i MiniMart_Database_Schema.sql
@@ -157,7 +150,7 @@ sqlcmd -S localhost,1434 -U sa -P 'YourPassword' -b -i MiniMart_Database_Schema.
 sqlcmd -S localhost,1434 -U sa -P 'YourPassword' -b -i MiniMart_SeedData.sql
 ```
 
-**With `sqlcmd` — a local instance using Windows authentication (Option B):**
+**ប្រើ local instance ជាមួយ Windows authentication (ជម្រើស B)៖**
 
 ```bash
 sqlcmd -S . -E -b -i MiniMart_Database_Schema.sql
@@ -167,26 +160,19 @@ sqlcmd -S . -E -b -i MiniMart_Database_Schema.sql
 sqlcmd -S . -E -b -i MiniMart_SeedData.sql
 ```
 
-Replace `-S .` with `-S .\SQLEXPRESS` or `-S '(localdb)\MSSQLLocalDB'` as needed.
+ប្ដូរ `-S .` ទៅ `-S .\SQLEXPRESS` ឬ `-S '(localdb)\MSSQLLocalDB'` តាម setup។
 
-**Without `sqlcmd` — use a GUI instead:** open dbgate (http://localhost:3033), SQL Server
-Management Studio, or Azure Data Studio; open each `.sql` file; execute
-`MiniMart_Database_Schema.sql` first, then `MiniMart_SeedData.sql`.
+**បើមិនមាន `sqlcmd`៖** បើក dbgate នៅ http://localhost:3033 ឬ SQL Server Management Studio (SSMS) រួចបើក និង execute `MiniMart_Database_Schema.sql` មុន `MiniMart_SeedData.sql`។
 
-**Verify it worked** — this should list five tables:
+**ពិនិត្យលទ្ធផល៖** Query នេះគួរបង្ហាញ tables ចំនួន 5។
 
 ```bash
 sqlcmd -S localhost,1434 -U sa -P 'YourPassword' -Q "USE MiniMartDB; SELECT name FROM sys.tables ORDER BY name;"
 ```
 
-The seed script is optional but recommended: it adds **6 categories and 24 products**, 5 of
-them deliberately below their reorder level so the Low Stock screen has content. It is safe
-to re-run — every insert is guarded by a `NOT EXISTS` check. It creates **no user
-accounts**; you create the first one on first run (§5.1).
+Seed script ជាជម្រើសបន្ថែម៖ វាបញ្ចូល **6 categories និង 24 products**។ ក្នុងនោះ 5 products មាន stock ទាបជាង reorder level ដើម្បីបង្ហាញនៅ Low Stock។ អាច run seed script ម្ដងទៀតបាន ព្រោះ insert នីមួយៗមាន `NOT EXISTS`។ វា **មិនបង្កើត user accounts** ទេ; អ្នកបង្កើត Admin ពេលបើកកម្មវិធីដំបូង (§5.1)។
 
-> ⚠️ **Re-running the *schema* script on an existing database fails.** It drops `Categories`
-> before `Products`, and the foreign key blocks that. To reset, drop in dependency order
-> first:
+> **កុំ run schema script ឡើងវិញលើ database ដែលមានទិន្នន័យ ដោយមិនមាន backup។** Script ព្យាយាម drop `Categories` មុន `Products` ដូច្នេះ foreign key នឹងរារាំង។ បើចង់ reset ពិតប្រាកដ ត្រូវ drop តាម dependency order ខាងក្រោមសិន។ **វាលុបទិន្នន័យទាំងអស់ក្នុង tables ទាំងនេះ។**
 >
 > ```sql
 > USE MiniMartDB;
@@ -199,10 +185,9 @@ accounts**; you create the first one on first run (§5.1).
 
 ---
 
-## 4. Point the app at your database
+## 4. កំណត់ database connection របស់កម្មវិធី
 
-One central place: **[`src/MiniMart.Presentation/App.config`](src/MiniMart.Presentation/App.config)**.
-Edit the `MiniMartDb` connection string so it matches the database you just set up.
+កែ `MiniMartDb` connection string ក្នុង **[src/MiniMart.Presentation/App.config](src/MiniMart.Presentation/App.config)** ឱ្យត្រូវនឹង database setup របស់អ្នក៖
 
 ```xml
 <connectionStrings>
@@ -212,33 +197,26 @@ Edit the `MiniMartDb` connection string so it matches the database you just set 
 </connectionStrings>
 ```
 
-Only the `Server=` part and the authentication change between setups:
+តម្លៃ `Server=` និង authentication ផ្លាស់ប្ដូរតាម setup៖
 
-| Target | `Server=` value | Authentication |
+| Target | តម្លៃ `Server=` | Authentication |
 |---|---|---|
-| **Docker container (as shipped)** | `localhost,1434` | `User ID=sa;Password=YourPassword` |
+| Docker container របស់គម្រោង | `localhost,1434` | `User ID=sa;Password=YourPassword` |
 | Local default instance | `.` | `Trusted_Connection=True` |
 | SQL Server Express | `.\SQLEXPRESS` | `Trusted_Connection=True` |
 | LocalDB | `(localdb)\MSSQLLocalDB` | `Trusted_Connection=True` |
 
-A local-instance connection string is kept commented out directly beneath the active one in
-`App.config`, so switching between the two is a matter of swapping which one is commented.
+`App.config` មាន connection string សម្រាប់ local instance ជា comment ខាងក្រោម active connection។ អាចប្ដូរមួយណាដែល active តាម setup របស់អ្នក។
 
-`TrustServerCertificate=True` is required because `Microsoft.Data.SqlClient` encrypts
-connections by default and local/containerised instances present a self-signed certificate.
+`TrustServerCertificate=True` អនុញ្ញាតឱ្យ local/container setup ប្រើ self-signed certificate ខណៈ `Microsoft.Data.SqlClient` ប្រើ encrypted connection។
 
-If the connection string is missing or wrong, the app shows one clear message box on startup
-and exits rather than failing screen by screen.
+បើ configuration បាត់ ឬមិនត្រឹមត្រូវ កម្មវិធីបង្ហាញ error message។ កំហុស connection ទៅ server អាចកើតឡើងនៅពេល database call ដំបូង។ ក្រោយ deployment តម្លៃនេះនៅក្នុង `MiniMart.Presentation.dll.config` ក្បែរ executable ហើយអាចកែ server ដោយមិន rebuild។
 
-After deployment this same setting lives in `MiniMart.Presentation.dll.config` beside the
-executable, so a site can be repointed at a different server **without a rebuild**.
-
-`App.config` also holds the store name/address/phone printed on receipts and the currency
-symbol used across the UI — edit those too if you like.
+ក្នុង `App.config` ក៏អាចកែ store name, address, phone លើ receipt និង currency symbol ក្នុង UI បានដែរ។
 
 ---
 
-## 5. Build and run
+## 5. Build និង run
 
 ```bash
 dotnet build MiniMartManagementSystem.sln
@@ -248,152 +226,117 @@ dotnet build MiniMartManagementSystem.sln
 dotnet run --project src/MiniMart.Presentation
 ```
 
-Or open `MiniMartManagementSystem.sln` in Visual Studio, make **MiniMart.Presentation** the
-startup project, and press <kbd>F5</kbd>.
+ឬបើក `MiniMartManagementSystem.sln` ក្នុង Visual Studio កំណត់ **MiniMart.Presentation** ជា startup project ហើយចុច <kbd>F5</kbd>។
 
-The sign-in window should appear with your server name shown beneath the title. To produce a
-self-contained build for another machine:
+Sign-in window គួរបង្ហាញជាមួយ server name។ ដើម្បី publish សម្រាប់ Windows x64៖
 
 ```bash
 dotnet publish src/MiniMart.Presentation -c Release -r win-x64 --self-contained false -o publish
 ```
 
-### 5.1 First run — create the administrator
+Command នេះប្រើ `--self-contained false` ដូច្នេះម៉ាស៊ីនគោលដៅត្រូវមាន .NET Desktop Runtime ដែលសមស្រប។
 
-There is **no default password anywhere in this project.** When the app finds a database with
-no accounts, it opens a **First-Time Setup** dialog and creates the initial Admin with a
-username and password you choose. The password is stored only as a salted
-PBKDF2-HMAC-SHA256 hash (100,000 iterations) — it is never recoverable, only verifiable.
+### 5.1 បើកដំបូង — បង្កើត Admin
 
-Sign in with that account and you land on the Admin dashboard. From **Users** you can create
-the cashier accounts; a cashier signing in goes straight to the till instead (§6).
+កម្មវិធី **មិនមាន default application account** ទេ។ បើ `Users` table ទទេ វាបើក **First-Time Setup** ឱ្យអ្នកកំណត់ username និង password របស់ Admin។ នេះខុសពី SA credentials របស់ database ក្នុង compose file។
 
-To start the account setup over, delete the row and restart the app:
+Password របស់ app រក្សាជា salted **PBKDF2-HMAC-SHA256 hash** ជាមួយ 100,000 iterations។ ប្រព័ន្ធអាច verify password ប៉ុន្តែមិនអាចអាន password ដើមពី hash បាន។
+
+Sign in ជា Admin ដើម្បីចូល dashboard។ បើក **Users** ដើម្បីបង្កើត Cashier accounts។ Cashier ចូលទៅ POS ដោយផ្ទាល់។
+
+ឧទាហរណ៍ខាងក្រោមលុប account ឈ្មោះ `admin`៖
 
 ```sql
 USE MiniMartDB; DELETE FROM dbo.Users WHERE Username = 'admin';
 ```
 
-(A user who has already processed sales cannot be deleted this way — the app deactivates
-such accounts instead, so sales history keeps resolving to a real cashier.)
+**First-Time Setup បើកតែពេល `Users` ទទេទាំងស្រុង។** ការលុប Admin មួយមិនបើក setup ឡើងវិញទេ បើនៅមាន users ផ្សេង។ បើ account នោះមាន sales history នោះ foreign key នឹងរារាំងការលុប។ សម្រាប់ការគ្រប់គ្រង accounts ជាប្រចាំ សូមប្រើ Users screen។
 
-### 5.2 If something goes wrong
+### 5.2 ដោះស្រាយបញ្ហា
 
-| Symptom | Cause and fix |
+| បញ្ហា | មូលហេតុ និងដំណោះស្រាយ |
 |---|---|
-| "The application is not configured correctly" | The `MiniMartDb` entry is missing from `App.config`. See §4. |
-| A network/instance error naming SQL Server | The server isn't reachable. Docker: `docker compose ps` — is it healthy? Local: is the SQL Server service running, and is TCP/IP enabled in SQL Server Configuration Manager? |
-| "Login failed for user 'sa'" | The password in `App.config` doesn't match the one the container volume was created with. Either use the original password or reset with `docker compose down -v` (deletes all data). |
-| "Cannot open database 'MiniMartDB'" | The schema script hasn't been run yet. See §3.3. |
-| A certificate/trust error | Add `TrustServerCertificate=True` to the connection string. |
-| Container starts then exits | The SA password doesn't meet SQL Server's complexity rules. Check `docker compose logs sqlserver`. |
-| `sqlcmd: command not found` | Use dbgate or SSMS instead (§3.3), or install the SQL Server command-line tools. |
-| Port 1434 already in use | Change the left side of `"1434:1433"` in `docker-compose.yml`, then match it in `App.config`. |
-| `dotnet build` fails on `net9.0-windows` | You're not on Windows, or the .NET 9 SDK isn't installed. Check `dotnet --list-sdks`. |
-| The Low Stock screen is empty | The seed data wasn't loaded. Run `MiniMart_SeedData.sql` (§3.3). |
+| "The application is not configured correctly" | បាត់ `MiniMartDb` ក្នុង `App.config`; មើល §4 |
+| Network/instance error របស់ SQL Server | ពិនិត្យ `docker compose ps`, SQL Server service, server name និង TCP/IP configuration |
+| "Login failed for user 'sa'" | Password ក្នុង `App.config` មិនត្រូវនឹង password ក្នុង database volume; ប្រើ password ត្រឹមត្រូវ។ `docker compose down -v` លុបទិន្នន័យទាំងអស់ក្នុង volumes |
+| "Cannot open database 'MiniMartDB'" | មិនទាន់ run schema script; មើល §3.3 |
+| Certificate/trust error | ពិនិត្យ `TrustServerCertificate=True` សម្រាប់ local setup |
+| Container ចាប់ផ្ដើមហើយបិទ | ពិនិត្យ password complexity និង `docker compose logs sqlserver` |
+| `sqlcmd: command not found` | ប្រើ dbgate ឬ SSMS ឬដំឡើង SQL Server command-line tools |
+| Port 1434 ត្រូវបានប្រើរួច | ប្ដូរខាងឆ្វេងនៃ `"1434:1433"` ហើយកែ port ក្នុង `App.config` ឱ្យត្រូវគ្នា |
+| `dotnet build` បរាជ័យលើ `net9.0-windows` | ពិនិត្យ Windows និង SDK ដោយ `dotnet --list-sdks` |
+| Low Stock ទទេ | អាចមិនមាន products ដែល stock ដល់ reorder level ឬមិនទាន់បញ្ចូល seed data |
 
 ---
 
 ## 6. Screens
 
-**Sign-in** routes by role: `Admin` → dashboard, `Cashier` → till.
+**Sign-in** បែងចែកតាម role៖ `Admin` → dashboard; `Cashier` → POS។
 
-| Screen | Role | Notes |
+| Screen | Role | មុខងារ |
 |---|---|---|
-| Point of Sale | Cashier, Admin | Scan/search, cart, discounts, payment, receipt. `F9` checkout, `F2` search. |
-| Dashboard | Admin | Today's sales/revenue, low-stock count, recent sales |
-| Products | Admin | CRUD, adjust stock, low-stock highlighting |
+| Point of Sale | Cashier, Admin | Scan/search, cart, discounts, payment, receipt; `F9` checkout, `F2` search |
+| Dashboard | Admin | Sales/revenue ថ្ងៃនេះ, low-stock count, recent sales |
+| Products | Admin | CRUD, Adjust Stock និងសម្គាល់ low stock |
 | Categories | Admin | CRUD |
-| Users | Admin | CRUD for Admin/Cashier accounts |
-| Sales History & Reports | Admin | Transactions + line drill-down, daily totals, best sellers |
-| Low Stock | Admin | Items at/below reorder level |
+| Users | Admin | CRUD សម្រាប់ Admin/Cashier accounts |
+| Sales History & Reports | Admin | Transactions, sale lines, daily totals, best sellers |
+| Low Stock | Admin | Products ដែល stock តិចជាង ឬស្មើ reorder level |
 
-At the till: type a code and press **Enter** to add it straight to the cart, or search by
-name and double-click a row.
+នៅ POS វាយ code ហើយចុច **Enter** ដើម្បីបន្ថែមទៅ cart ឬ search តាម name ហើយ double-click row។
 
 ---
 
-## 7. How the specification maps to the code
+## 7. ទំនាក់ទំនងរវាង specification និង code
 
-| Requirement | Where |
+| Requirement | កន្លែងអនុវត្ត |
 |---|---|
-| Encapsulation — stock can never go negative | `Product.ReduceStock` / `AdjustStockTo`; `StockQuantity` has no public setter |
-| Abstraction — BLL depends on contracts only | `BusinessLogic/Repositories/I*Repository.cs` |
-| Polymorphism — discount strategies | `Discounts/DiscountStrategy` + `PercentageDiscount`, `FlatDiscount`, `NoDiscount`; used by `SaleService` |
-| Parameterized queries only (Ch. 5) | `SqlRepositoryBase` helpers accept a fixed template + a parameter-binding delegate; no repository ever concatenates or interpolates SQL |
-| Transactional checkout (Ch. 6.2) | `SaleRepository.SaveSaleAsync` — one `SqlTransaction`: insert header (`OUTPUT INSERTED.SaleId`), insert each line, then `UPDATE … WHERE StockQuantity >= @Quantity`; zero rows affected ⇒ rollback everything |
-| Thin event handlers (Ch. 6.3) | `PosForm` — no SQL, no transactions, no stock arithmetic; even the running total comes from `SaleService.QuoteCart` |
-| Business vs. infrastructure errors (Ch. 6.3) | `UiFeedback.ShowError` — `BusinessRuleException` shown verbatim; `SqlException` gets a generic "nothing was saved, please retry" |
-| Async data access | Every repository method is `async`; the UI awaits through `AsyncUi.RunAsync` |
-| Composition root, no singletons | `AppServices` — the only type that names a concrete repository |
+| Encapsulation — stock មិនអវិជ្ជមាន | `Product.ReduceStock` / `AdjustStockTo`; `StockQuantity` គ្មាន public setter |
+| Abstraction — BLL ពឹងលើ contracts | `BusinessLogic/Repositories/I*Repository.cs` |
+| Polymorphism — discount strategies | `Discounts/DiscountStrategy`, `PercentageDiscount`, `FlatDiscount`, `NoDiscount` ប្រើដោយ `SaleService` |
+| Parameterized queries (Ch. 5) | `SqlRepositoryBase` ប្រើ SQL template និង parameter-binding delegate |
+| Transactional checkout (Ch. 6.2) | `SaleRepository.SaveSaleAsync`: insert header, insert lines, guarded stock UPDATE ក្នុង `SqlTransaction`; 0 rows affected → rollback |
+| Thin event handlers (Ch. 6.3) | `PosForm` ហៅ services; total មកពី `SaleService.QuoteCart` |
+| Business និង infrastructure errors (Ch. 6.3) | `UiFeedback.ShowError` បង្ហាញ `BusinessRuleException` តាម message និង `SqlException` ជា generic message |
+| Async data access | Repository methods ផ្ដល់ async operations; UI await តាម `AsyncUi.RunAsync` |
+| Composition root | `AppServices` បង្កើត concrete repositories និងភ្ជាប់ dependencies |
 
-### The race condition guard
+### ការទប់ស្កាត់ race condition
 
-Stock is validated twice on purpose. `SaleService` re-reads each product before saving,
-which produces a friendly message in the common case. The **authoritative** check is the
-guarded `UPDATE` inside the transaction: if two tills sell the last unit simultaneously, one
-of them matches zero rows and the entire sale — header, all lines, and any stock already
-decremented — is rolled back.
+`SaleService` អាន stock ម្ដងទៀតមុន save ដើម្បីផ្ដល់ error message ងាយយល់។ ការធានាចុងក្រោយគឺ guarded `UPDATE` ក្នុង transaction។ បើ POS ពីរលក់ unit ចុងក្រោយពេលដំណាលគ្នា មួយអាចបាន 0 rows affected ហើយ sale នោះនឹង rollback ទាំង header, lines និង stock ដែលបានដក។
 
 ---
 
-## 8. Assumptions made beyond the two documents
+## 8. ការសម្រេចចិត្តបន្ថែមពី specification
 
-1. **.NET 9 / `Microsoft.Data.SqlClient`.** The modern, maintained ADO.NET provider
-   (`System.Data.SqlClient` is deprecated). Still ADO.NET: `SqlConnection`, `SqlCommand`,
-   `SqlParameter`, `SqlTransaction`, `SqlDataReader`.
-2. **Repository interfaces in `BusinessLogic`** — see §1.
-3. **Password hashing = PBKDF2-HMAC-SHA256**, 100k iterations, 16-byte random salt, stored
-   as `PBKDF2$iterations$salt$hash` (~83 chars, fits `NVARCHAR(256)`). The documents require
-   hashing but do not specify an algorithm.
-4. **No default credentials**; first-run setup instead.
-5. **Admins can open the POS screen.** The documents assign POS to Cashiers; treating Admin
-   as a superset lets a manager cover the counter without a second account.
-6. **Delete is soft where history exists.** Products and users referenced by sales are
-   deactivated rather than deleted, so historical receipts and cashier attribution stay
-   intact. The UI says which happened.
-7. **Discounts are applied at the cart level, not persisted per-sale.** The schema's `Sales`
-   table has no discount column, so `TotalAmount` stores the post-discount figure; the
-   receipt derives the discount as `Subtotal − TotalAmount`. No schema change was made.
-8. **No `Customers` table.** Chapter 1.3.2 lists customers as *optional* and the schema has
-   no such table.
-9. **Tax is not applied.** Chapter 1.3.3 mentions tax, but the schema carries no tax column
-   and no rate is specified anywhere.
-10. **Stored procedures were not used.** Chapter 5.4 presents them as an *additional*
-    optional layer; the required defence — parameterization — is applied everywhere.
-11. **Layouts are defined in code.** `LoginForm` and `PosForm` use `.Designer.cs` files; the
-    remaining forms build their controls in a `BuildUi()` method. Shared styling lives in
-    `UiTheme`.
+1. ប្រើ **.NET 9 / `Microsoft.Data.SqlClient`** ជាមួយ ADO.NET: `SqlConnection`, `SqlCommand`, `SqlParameter`, `SqlTransaction`, `SqlDataReader`។
+2. ដាក់ repository interfaces ក្នុង `BusinessLogic` ដើម្បីជៀសវាង circular dependency (§1)។
+3. Password hashing ប្រើ **PBKDF2-HMAC-SHA256**, 100k iterations, 16-byte random salt និង format `PBKDF2$iterations$salt$hash` ប្រហែល 83 characters ដែលអាចដាក់ក្នុង `NVARCHAR(256)`។
+4. ប្រើ first-run setup សម្រាប់ application accounts ជំនួស default credentials។
+5. Admin អាចបើក POS ដើម្បីជួយ Cashier ដោយមិនត្រូវការ account ទីពីរ។
+6. Products និង users ដែលមាន sales history ប្រើ soft delete ដើម្បីរក្សាទំនាក់ទំនងក្នុង receipts។
+7. Discount អនុវត្តលើ cart; `Sales` គ្មាន discount column។ `TotalAmount` រក្សាតម្លៃក្រោយ discount ហើយ receipt គណនា discount ពី `Subtotal − TotalAmount`។
+8. គ្មាន `Customers` table ព្រោះ specification កំណត់ជាជម្រើស ហើយ schema មិនមាន។
+9. មិនគណនា tax ព្រោះគ្មាន tax column ឬ rate ដែលបានកំណត់។
+10. មិនប្រើ stored procedures; ប្រើ parameterization នៅ data access។
+11. `LoginForm` និង `PosForm` ប្រើ `.Designer.cs`; forms ផ្សេងបង្កើត controls ក្នុង `BuildUi()` ហើយប្រើ `UiTheme` រួម។
 
 ---
 
-## 9. Verification performed
+## 9. កំណត់ត្រា verification ពីមុន
 
-The whole solution builds with **0 warnings, 0 errors**. The data layer was exercised against
-a real SQL Server 2014 instance with a temporary harness covering 46 assertions — all passed:
+ឯកសារដើមកត់ត្រាថា solution build បាន **0 warnings, 0 errors** ហើយ temporary harness លើ SQL Server 2014 ឆ្លងកាត់ **46 assertions**៖
 
-* password hashing/verification, rejection of wrong passwords and duplicate usernames
-* SQL-injection payload (`x'; DROP TABLE dbo.Products; --`) treated purely as data
-* category/product CRUD, duplicate SKU and duplicate-name rejection
-* `Product.ReduceStock` refusing to go negative
-* all three discount strategies, including flat-discount clamping at zero
-* **a full checkout**: sale persisted, stock decremented 100→97 and 50→48
-* **the rollback guarantee**: an oversell threw `InsufficientStockException`, left no sale
-  header behind, and rolled back the stock deduction of the *valid* line in the same
-  transaction
-* reporting: line drill-down, joined names, daily totals not inflated by the line-item join,
-  best-seller ranking
-* referential guards: category-in-use, soft-delete of products/users with history, and
-  refusal to remove the last active administrator
+- Password hashing/verification និងការបដិសេធ wrong password ឬ duplicate username។
+- SQL-injection payload (`x'; DROP TABLE dbo.Products; --`) ត្រូវបានចាត់ទុកជា data។
+- Category/product CRUD និងការបដិសេធ duplicate SKU/name។
+- `Product.ReduceStock` រារាំង stock អវិជ្ជមាន។
+- Discount strategies ទាំងបី រួមទាំង FlatDiscount ដែលមិនឱ្យ total ក្រោម 0។
+- Checkout រក្សា sale ហើយបន្ថយ stock 100→97 និង 50→48។
+- Oversell បង្កើត `InsufficientStockException` ហើយ rollback header និង stock updates ទាំងអស់ក្នុង transaction។
+- Reporting, line drill-down, daily totals និង best-seller ranking។
+- Category-in-use, soft delete និងការរក្សា last active Admin។
 
-Search behaviour was verified separately, including that `%` and `_` are escaped and match
-literally rather than acting as wildcards.
+កំណត់ត្រាដើមក៏បញ្ជាក់ការសាកល្បង search ដែល escape `%` និង `_` និងការបើក sign-in, first-run setup និង Admin dashboard។ ក្រោយប្ដូរទៅ SQL Server 2022 Docker container មាន **13/13 assertions** ឆ្លងកាត់សម្រាប់ connection, seed catalogue, authentication, checkout, rollback និង reporting មុន reset ទៅ clean seeded state។
 
-The application was launched and confirmed to start, connect, and render the sign-in,
-first-run setup, and Admin dashboard screens.
-
-After being repointed at the **SQL Server 2022 Docker container**, the data layer was
-re-verified through `Microsoft.Data.SqlClient` using the exact connection string now
-deployed — 13/13 assertions passed, covering connectivity, the seeded catalogue, password
-hashing and sign-in, a committed checkout with stock decrement, the oversell rollback, and
-the reporting queries. The container database was then reset to a clean seeded state.
+នេះជាកំណត់ត្រា verification ដែលមានស្រាប់ មិនមែនជាការរត់ tests ថ្មីក្នុងពេលបកប្រែឯកសារនេះទេ។

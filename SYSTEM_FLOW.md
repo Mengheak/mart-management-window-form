@@ -1,8 +1,48 @@
-# Mini Mart Management System — Source Code Flow
+# Mini Mart Management System — លំហូរ Source Code
 
-## 1. The three projects
+ឯកសារនេះតាមដានការងារពី UI ទៅ services និង database។ វាសម្រាប់អ្នកដែលបានយល់ទិដ្ឋភាពទូទៅពី [PROJECT_EXPLAINED.md](PROJECT_EXPLAINED.md) ហើយចង់ដឹងថា class និង method ណាដំណើរការនៅជំហាននីមួយៗ។ Technical terms, class/method names, identifiers និង code/flow examples រក្សាជាភាសាដើម ដើម្បីងាយផ្ទៀងផ្ទាត់ជាមួយ source code។ Line numbers ជា references ពីឯកសារដើម ហើយអាចផ្លាស់ប្ដូរពេល code ត្រូវបានកែ។
 
-The solution is split into three projects, and the reference arrows only point one way:
+## ផែនទីលំហូរសរុប
+
+```text
+Program.Main
+  → AppServices creates repositories and services
+  → LoginForm authenticates User
+  → AdminDashboardForm or PosForm opens
+  → Form calls a BusinessLogic Service
+  → Service validates rules and calls an I*Repository
+  → DataAccess Repository executes parameterized SQL
+  → Result returns to Service, then to Form
+```
+
+សម្រាប់ checkout មានការបន្ថែម transaction៖
+
+```text
+PosForm
+  → SaleService.CheckoutAsync
+  → SaleRepository.SaveSaleAsync
+  → BEGIN TRANSACTION
+      INSERT Sales
+      INSERT SaleDetails
+      UPDATE Products stock
+    COMMIT or ROLLBACK
+  → ReceiptForm
+```
+
+## តួនាទីរបស់ component នីមួយៗ
+
+| Component | តួនាទី | មិនគួរធ្វើអ្វី |
+|---|---|---|
+| Form | ទទួល user input, ហៅ Service និងបង្ហាញ result | មិនគួរសរសេរ SQL ឬអនុវត្ត stock calculation ដោយខ្លួនឯង |
+| Model | រក្សា state និង validate rules របស់ object | មិនគួរបើក database connection |
+| Service | សម្របសម្រួល business process និង validation | មិនគួរមាន WinForms controls ឬ raw SQL |
+| Repository Interface | កំណត់ data-access contract | មិនមាន UI logic |
+| Repository Implementation | Execute parameterized SQL និង map rows | មិនគួរបង្ហាញ MessageBox |
+| `AppServices` | បង្កើត និងភ្ជាប់ dependencies | មិនមែនជា business workflow |
+
+## 1. Projects ទាំងបី
+
+Solution បែងចែកជា projects បី ដែលមិនមាន circular reference៖
 
 ```
 MiniMart.Presentation  (WinForms, net9.0-windows, the .exe)
@@ -12,21 +52,21 @@ MiniMart.DataAccess    (ADO.NET + SQL Server, net9.0)
 MiniMart.BusinessLogic (plain C#, net9.0, no dependencies at all)
 ```
 
-`MiniMart.BusinessLogic` references nothing. It holds the models, the rules, and the interfaces for data access (`IProductRepository`, `ISaleRepository`, etc.). `MiniMart.DataAccess` implements those interfaces with real SQL. `MiniMart.Presentation` shows the forms and only talks to business-logic services.
+`MiniMart.Presentation` ក៏ reference `MiniMart.BusinessLogic` ដោយផ្ទាល់។ `MiniMart.BusinessLogic` មិនពឹងលើ projects ពីរផ្សេងទៀតទេ។ វាមាន models, business rules និង repository interfaces ដូចជា `IProductRepository`, `ISaleRepository`។ `MiniMart.DataAccess` implement interfaces ទាំងនេះដោយ SQL។ `MiniMart.Presentation` បង្ហាញ forms ហើយហៅ services សម្រាប់ការងារអាជីវកម្ម។
 
-The point of this: business rules never know about SQL, and SQL never knows about forms.
+គោលបំណងគឺបំបែក business rules ពី SQL និងបំបែក SQL ពី forms។
 
 ---
 
 ## 2. Startup
 
-`Program.cs:9` — `Main()`:
+ក្នុង `Program.cs:9`, `Main()`៖
 
-1. `ApplicationConfiguration.Initialize()` — standard WinForms boot.
-2. `AppServices.CreateFromConfiguration()` — builds every object the app needs. If this throws (bad connection string), `UiFeedback.ShowError` shows a message box and the app exits.
-3. Enters an infinite `while (true)` loop — this loop is what makes "log out and log back in" work.
+1. ហៅ `ApplicationConfiguration.Initialize()` ដើម្បី initialize WinForms។
+2. ហៅ `AppServices.CreateFromConfiguration()` ដើម្បីបង្កើត dependencies។ បើ configuration បង្កើតមិនបាន `UiFeedback.ShowError` បង្ហាញ message box ហើយ app ចាកចេញ។
+3. ចូល `while (true)` loop ដើម្បីគាំទ្រ Sign Out និង Sign In ម្ដងទៀត។
 
-Inside the loop:
+លំហូរក្នុង loop៖
 
 ```
 new LoginForm(services).ShowDialog()
@@ -38,11 +78,11 @@ new LoginForm(services).ShowDialog()
                       and LogOutRequested == true    → loop back to login
 ```
 
-`ILogoutAware` (`Common/ILogoutAware.cs`) is a one-property interface — `bool LogOutRequested`. Both `PosForm` and `AdminDashboardForm` implement it. When the user clicks "Sign Out", the form sets the flag to true and closes; `Main` sees the flag and loops back to `LoginForm` instead of exiting.
+`ILogoutAware` ក្នុង `Common/ILogoutAware.cs` មាន property `bool LogOutRequested`។ `PosForm` និង `AdminDashboardForm` implement interface នេះ។ ពេលចុច **Sign Out** form កំណត់ flag ជា `true` រួចបិទ។ `Main` ពិនិត្យ flag ហើយត្រឡប់ទៅ `LoginForm`។ បើបិទ main form ធម្មតា app ចាកចេញ។
 
-### AppServices — the wiring
+### AppServices — ភ្ជាប់ dependencies
 
-`AppServices.cs` is the manual dependency-injection container. Its constructor does everything in order:
+`AppServices.cs` ជា manual dependency injection composition root។ Constructor បង្កើត repositories មុន services៖
 
 ```csharp
 // 1. Concrete repositories — the only place the DataAccess classes are named
@@ -59,24 +99,25 @@ Inventory  = new InventoryService(_productRepository, categoryRepository);
 Reporting  = new ReportingService(_saleRepository);
 ```
 
-`Auth`, `Inventory`, `Categories`, `Users`, `Reporting` are singletons — one instance for the whole app life, passed to every form.
+`Auth`, `Inventory`, `Categories`, `Users` និង `Reporting` ជា instances ដែលបង្កើតម្តងក្នុង `AppServices` ហើយ share ទៅ forms ក្នុង app lifetime នោះ។ វាមិនមែនជា global static Singleton implementation ទេ។
 
-`SaleService` is the exception. `CreateSaleService()` (`AppServices.cs:51`) makes a new one each call, because `SaleService` holds mutable state — the currently applied `DiscountStrategy`. Each `PosForm` gets its own so one till's discount doesn't leak into another.
+`CreateSaleService()` (`AppServices.cs:51`) បង្កើត `SaleService` ថ្មីរាល់ពេល ព្រោះ service មាន mutable `DiscountStrategy`។ `PosForm` នីមួយៗទទួល instance ផ្ទាល់ខ្លួន ដើម្បីមិនឱ្យ discount state រួមគ្នា។
 
-The connection string comes from `App.config` via `DatabaseSettings.GetConnectionString()`, which looks up the `MiniMartDb` entry and throws a `ConfigurationErrorsException` with a helpful message if it's missing.
+Connection string មកពី `App.config` តាម `DatabaseSettings.GetConnectionString()` ដែលស្វែងរក `MiniMartDb`។ បើបាត់ entry នេះ វា throw `ConfigurationErrorsException`។ Server មិនអាចភ្ជាប់បានជាបញ្ហានៅ database call មិនចាំបាច់កើតនៅពេល wiring ទេ។
 
 ---
 
 ## 3. Login flow
 
-`LoginForm_Load` (`LoginForm.cs:22`):
+`LoginForm_Load` (`LoginForm.cs:22`)៖
 
-1. Shows the database description in a label (Server / MiniMartDB).
-2. Calls `OfferFirstRunSetupAsync()` → `Auth.AnyUsersExistAsync()`.
-   - If the `Users` table is empty, it opens `FirstRunSetupForm` so you can create the first admin. If you cancel that, the login form closes and the app exits.
-   - Return type is `bool?` on purpose: `null` means the check itself failed (DB down), which is different from `false` (no users). Only `false` triggers setup.
+1. បង្ហាញ database description ក្នុង label ដូចជា Server / MiniMartDB។
+2. ហៅ `OfferFirstRunSetupAsync()` → `Auth.AnyUsersExistAsync()`។
+3. បើ `Users` ទទេ បើក `FirstRunSetupForm` សម្រាប់បង្កើត Admin។ បើ cancel នោះ login form បិទ ហើយ app ចាកចេញ។
 
-`SignInButton_Click` → `AuthService.AuthenticateAsync(username, password)`:
+Return type `bool?` បែងចែកស្ថានភាព៖ `null` មានន័យថាការពិនិត្យបរាជ័យ ដូចជា DB មិនដំណើរការ; `false` មានន័យថាគ្មាន users។ មានតែ `false` ប៉ុណ្ណោះដែលបើក setup។
+
+`SignInButton_Click` ហៅ `AuthService.AuthenticateAsync(username, password)`៖
 
 ```
 AuthService.AuthenticateAsync
@@ -87,46 +128,44 @@ AuthService.AuthenticateAsync
   └─ return User
 ```
 
-Notice the "user not found" and "wrong password" cases produce the same message, so you can't probe which usernames exist.
+ករណី username មិនមាន និង password ខុសប្រើ message ដូចគ្នា ដើម្បីមិនបង្ហាញថា username ណាមានស្រាប់។ Account ដែល inactive ត្រូវបានបដិសេធដែរ។
 
-Password checking is `Pbkdf2PasswordHasher`. Stored format is `PBKDF2$100000$<base64 salt>$<base64 hash>` — four `$`-separated parts. Verify re-derives the hash with the salt and iteration count read out of the stored string, then compares with `CryptographicOperations.FixedTimeEquals` (constant-time, so timing doesn't leak). A malformed stored hash returns `false` rather than throwing — a bad row is a failed sign-in, not a crash.
+`Pbkdf2PasswordHasher` verify hash format `PBKDF2$100000$<base64 salt>$<base64 hash>` ដែលមាន 4 parts បំបែកដោយ `$`។ វាយក salt និង iteration count ពី stored string មកគណនា hash ឡើងវិញ ហើយប្រៀបធៀបតាម `CryptographicOperations.FixedTimeEquals`។ Malformed hash ត្រឡប់ `false` ដោយមិន throw ដើម្បីឱ្យ sign-in បរាជ័យជំនួស crash។
 
-Back in `LoginForm`, a `BusinessRuleException` is caught and shown inline in a red label, not a message box — the cashier retypes without dismissing a dialog. Anything else goes to `UiFeedback.ShowError`.
+`LoginForm` ចាប់ `BusinessRuleException` ហើយបង្ហាញក្នុង red label ដើម្បីឱ្យអ្នកប្រើកែ input ដោយមិនចាំបាច់បិទ dialog។ Exceptions ផ្សេងទៅ `UiFeedback.ShowError`។
 
 ---
 
-## 4. The POS (cashier) flow — the main path
+## 4. POS flow — ដំណើរការសំខាន់របស់ Cashier
 
-`PosForm` holds three things: `_cart` (a `Cart`), `_saleService` (its own instance), and `_cashier` (the signed-in `User`).
+`PosForm` រក្សា `_cart` ជា `Cart`, `_saleService` ជា instance ផ្ទាល់ខ្លួន និង `_cashier` ជា signed-in `User`។
 
-### Adding items
+### បន្ថែម products
 
-Three ways to add a product, all ending at the same place:
-
-| Trigger | Path |
+| សកម្មភាព | Method flow |
 |---|---|
-| Type in search box | `SearchTextBox_TextChanged` → `Inventory.SearchAsync` → refill grid |
-| Scan/type code + Enter | `SearchTextBox_KeyDown` → `Inventory.GetBySkuAsync` → `AddProductToCart` |
-| Double-click grid row / "Add" button | `AddSelectedProductToCart` → `AddProductToCart` |
+| វាយក្នុង search box | `SearchTextBox_TextChanged` → `Inventory.SearchAsync` → refresh grid |
+| Scan ឬវាយ code ហើយចុច Enter | `SearchTextBox_KeyDown` → `Inventory.GetBySkuAsync` → `AddProductToCart` |
+| Double-click row ឬចុច Add | `AddSelectedProductToCart` → `AddProductToCart` |
 
-`AddProductToCart` calls `_cart.AddItem(product, quantity)`. The rules live in `Cart.AddItem` (`Models/Cart.cs:21`), not in the form:
+`AddProductToCart` ហៅ `_cart.AddItem(product, quantity)`។ Rules នៅ `Cart.AddItem` (`Models/Cart.cs:21`)៖
 
-- quantity ≤ 0 → `BusinessRuleException`
-- product inactive → `BusinessRuleException`
-- if the product is already in the cart, the combined quantity is checked against stock → `InsufficientStockException`
-- otherwise add a new `CartItem`, or bump the existing line's quantity
+- Quantity ≤ 0 → `BusinessRuleException`។
+- Product inactive → `BusinessRuleException`។
+- បើ product នៅក្នុង cart រួច ត្រូវពិនិត្យ quantity សរុបមិនលើស stock; បើលើស → `InsufficientStockException`។
+- បង្កើត `CartItem` ថ្មី ឬបន្ថែម quantity លើ line ដែលមានស្រាប់។
 
-`CartItem` snapshots `UnitPrice` at the moment of adding, so a price change mid-sale doesn't alter a cart already built.
+`CartItem` snapshot `UnitPrice` នៅពេលបន្ថែម។ ដូច្នេះការកែ product price ក្រោយបន្ថែមមិនប្ដូរ cart price ដែលរក្សារួចទេ។
 
-### Totals — recalculated constantly
+### គណនា totals ឡើងវិញ
 
-`UpdateTotals()` runs after every cart change and on every keystroke in the "amount paid" box. It calls:
+`UpdateTotals()` ដំណើរការក្រោយ cart ផ្លាស់ប្ដូរ និងពេល amount paid ផ្លាស់ប្ដូរ៖
 
 ```csharp
 var quote = _saleService.QuoteCart(_cart, ReadAmountPaid());
 ```
 
-`SaleService.QuoteCart` is pure arithmetic — no database, no side effects:
+`SaleService.QuoteCart` គណនាដោយមិន query database និងគ្មាន side effects៖
 
 ```
 subtotal       = cart.Subtotal                      (sum of line totals, rounded)
@@ -137,41 +176,36 @@ sufficient     = paid >= total
 changeDue      = sufficient ? paid - total : 0
 ```
 
-It returns a `CheckoutQuote` record. The form reads it and either shows green "Change Due" or red "Still Owing" (`quote.AmountOutstanding`).
+Method ត្រឡប់ `CheckoutQuote` record។ Form បង្ហាញ **Change Due** ពណ៌បៃតងបើប្រាក់គ្រប់ ឬ **Still Owing** ពណ៌ក្រហមដោយប្រើ `quote.AmountOutstanding`។ អាចហៅ `QuoteCart` ញឹកញាប់បាន ព្រោះវាមិនកែ database។
 
-Because `QuoteCart` has no side effects, the form can call it as often as it likes.
+### Discounts — Strategy pattern
 
-### Discounts — the strategy pattern
+`DiscountStrategy` ជា abstract class ដែលមាន `Apply(decimal subtotal)` និង `Description`។ Implementations បី៖
 
-`DiscountStrategy` is an abstract class with `Apply(decimal subtotal)` and `Description`. Three implementations:
+- `NoDiscount` ប្រើ `NoDiscount.Instance` ហើយត្រឡប់ subtotal ដដែល។
+- `PercentageDiscount(p)` validate 0–100 ក្នុង constructor ហើយគណនា `subtotal × (1 − p/100)`។
+- `FlatDiscount(amount)` validate non-negative amount, ដកចំនួនថេរ ហើយ clamp total ត្រឹម 0។
 
-- `NoDiscount` — singleton (`NoDiscount.Instance`), returns the subtotal unchanged
-- `PercentageDiscount(p)` — validates 0–100 in the constructor, returns `subtotal × (1 − p/100)`
-- `FlatDiscount(amount)` — validates non-negative, subtracts, clamps at 0 so a big discount never makes the total negative
+`ApplyDiscountButton_Click` (`PosForm.cs:209`) បម្លែង combo box index ទៅ strategy ហើយហៅ `_saleService.ApplyDiscount(strategy)`។ `ApplyDiscount(null)` reset ទៅ `NoDiscount.Instance`។ Strategy ថ្មីអាចបន្ថែមជាថ្មី class ដោយរក្សា calculation contract; UI selection/mapping ត្រូវបន្ថែមផងដែរ។
 
-`ApplyDiscountButton_Click` (`PosForm.cs:209`) maps the combo box index to a strategy and calls `_saleService.ApplyDiscount(strategy)`. `ApplyDiscount(null)` resets to `NoDiscount.Instance`. Adding a new discount type means writing one class — nothing in `SaleService` or the form changes.
+### Checkout — លំហូរសំខាន់
 
-### Checkout — the critical path
+`CheckoutButton_Click` ហៅ `SaleService.CheckoutAsync(cart, cashierId, amountPaid)`៖
 
-`CheckoutButton_Click` → `SaleService.CheckoutAsync(cart, cashierId, amountPaid)`:
+1. Cart ទទេ → `BusinessRuleException`។
+2. `cashierId <= 0` → `BusinessRuleException`។
+3. `ValidateStockAsync` អាន product ថ្មីពី DB សម្រាប់ line នីមួយៗ។ បើ product បាត់ ឬ inactive → `BusinessRuleException`; stock មិនគ្រប់ → `InsufficientStockException`។
+4. `QuoteCart` គណនា totals ឡើងវិញ។
+5. បើ paid < total → `BusinessRuleException` ដែលប្រាប់ចំនួនប្រាក់ខ្វះ។
+6. `new Sale(cashierId, total, paid)` validate និងគណនា `ChangeDue`។
+7. `sale.AddLines(cart.Items.Select(SaleDetail.FromCartItem))` បង្កើត sale lines។
+8. `_saleRepository.SaveSaleAsync(sale)` រក្សាទុក sale។
 
-1. cart empty? → `BusinessRuleException`
-2. `cashierId <= 0`? → `BusinessRuleException`
-3. `ValidateStockAsync` — for EVERY line, re-fetch the product from the DB:
-   - gone → `BusinessRuleException`
-   - inactive → `BusinessRuleException`
-   - not enough → `InsufficientStockException`
-4. `QuoteCart` — recompute totals
-5. `paid < total`? → `BusinessRuleException` (tells you how much more to collect)
-6. `new Sale(cashierId, total, paid)` — constructor re-validates and computes `ChangeDue`
-7. `sale.AddLines(cart.Items.Select(SaleDetail.FromCartItem))`
-8. `_saleRepository.SaveSaleAsync(sale)`
+ការអាន stock ក្នុងជំហាន 3 ចាំបាច់ ព្រោះ cart អាចត្រូវបានបង្កើតមុន ហើយ stock ផ្លាស់ប្ដូររួច។ វាជាការពិនិត្យមុន save មិនមែនការធានាផ្នែក concurrency ចុងក្រោយទេ។
 
-Step 3 is a pre-flight check against a fresh read — the cart was built minutes ago and stock may have moved.
+### Transaction នៅកន្លែងណា?
 
-### Where the transaction lives
-
-`SaleRepository.SaveSaleAsync` (`SaleRepository.cs:19`) is the only place in the app that opens a database transaction:
+`SaleRepository.SaveSaleAsync` (`SaleRepository.cs:19`) បើក database transaction សម្រាប់ save sale និងបន្ថយ stock ជាមួយគ្នា៖
 
 ```
 BEGIN TRANSACTION
@@ -187,11 +221,11 @@ BEGIN TRANSACTION
 COMMIT
 ```
 
-The `AND StockQuantity >= @Quantity` in the `UPDATE` is the real safety net. Step 3 in `CheckoutAsync` can go stale between the check and the write; this clause cannot. If someone else sold the last unit in between, the `UPDATE` matches zero rows, the code throws, and the catch block calls `SafeRollbackAsync` — the header, all lines, and all stock decrements are undone together. Nothing half-saved.
+`AND StockQuantity >= @Quantity` ក្នុង `UPDATE` ជាការធានាថាមិនដកលើស stock នៅពេល write។ បើមានអ្នកផ្សេងលក់ unit ចុងក្រោយមុន update នេះ នោះ rows affected = 0 ហើយ code throw exception។ Catch block ហៅ `SafeRollbackAsync` ដើម្បី rollback header, sale lines និង stock decrements ក្នុង transaction ទាំងអស់។
 
-`SafeRollbackAsync` swallows exceptions from the rollback itself, because if the connection is already broken the server has aborted the transaction anyway.
+`SafeRollbackAsync` មិនឱ្យ rollback exception លាក់ original error។ ការបរាជ័យនៃ connection/rollback ត្រូវពិនិត្យតាម transaction state; error message មួយមិនមែនជា audit record សម្រាប់បញ្ជាក់ commit status ទេ។
 
-### After checkout
+### ក្រោយ checkout
 
 ```
 sale returned → ReceiptForm.ShowDialog()
@@ -199,17 +233,17 @@ sale returned → ReceiptForm.ShowDialog()
               → LoadProductsAsync()     (reload grid so stock numbers are current)
 ```
 
-`ReceiptForm` builds a fixed-width 42-column text receipt in a `StringBuilder` (store name from `App.config`, header block, one block per line item, subtotal/discount/total/paid/change), shows it in a read-only Consolas textbox, and can render it to a `PrintDocument` for print preview. A missing printer is caught and reported without implying the sale failed.
+`ReceiptForm` ប្រើ `StringBuilder` បង្កើត text receipt ទទឹង 42 columns។ វាមាន store details ពី `App.config`, header, line items, subtotal, discount, total, paid និង change។ បង្ហាញក្នុង read-only Consolas textbox ហើយអាច render ទៅ `PrintDocument` សម្រាប់ print preview។ Printer error ត្រូវរាយការណ៍ដោយមិនចាត់ទុកថា sale ដែល save រួចបរាជ័យ។
 
-Keyboard shortcuts: `F9` = checkout, `F2` = jump to search (`PosForm_KeyDown`).
+Keyboard shortcuts ក្នុង `PosForm_KeyDown`៖ `F9` សម្រាប់ checkout និង `F2` សម្រាប់ទៅ search។
 
 ---
 
 ## 5. Admin flow
 
-`AdminDashboardForm` builds its whole UI in code (no designer file). Layout: header bar, left nav panel, four stat tiles, recent-sales grid, status bar.
+`AdminDashboardForm` បង្កើត UI ក្នុង code ដោយគ្មាន designer file។ Layout មាន header bar, left nav panel, stat tiles ចំនួន 4, recent-sales grid និង status bar។
 
-`RefreshDashboardAsync` runs on `Load` and after every child form closes:
+`RefreshDashboardAsync` ដំណើរការពេល `Load` និងពេល child form បិទ៖
 
 ```
 Reporting.GetDailyTotalsAsync(today, today)   → sales count + revenue tiles
@@ -218,26 +252,26 @@ Inventory.GetProductsAsync()                  → active product count tile
 Reporting.GetSalesAsync(today-30, today)      → recent sales grid (top 15)
 ```
 
-Nav buttons open child forms with `ShowDialog`, and `ShowChild` refreshes the dashboard when each one closes:
+Nav buttons បើក forms តាម `ShowDialog`; `ShowChild` refresh dashboard ក្រោយ form បិទ។
 
-| Button | Form | Services used |
+| Button | Form | Services |
 |---|---|---|
 | Products | `ProductListForm` → `ProductEditForm`, `StockAdjustmentForm` | Inventory, Categories |
 | Categories | `CategoryListForm` → `TextPromptForm` | Categories |
 | Users | `UserListForm` → `UserEditForm` | Users |
 | Sales History & Reports | `SalesHistoryForm` | Reporting |
 | Low Stock | `LowStockForm` | Inventory |
-| Point of Sale | `PosForm` | admin can work the till too |
+| Point of Sale | `PosForm` | Inventory និង SaleService; Admin អាចលក់បានដែរ |
 
-`SalesHistoryForm` has a from/to date range and three tabs — Transactions (selecting a sale loads its line items into the bottom grid), Daily Totals, Best Sellers — all filled from one `RefreshAllAsync`.
+`SalesHistoryForm` មាន from/to date range និង tabs បី៖ **Transactions**, **Daily Totals**, **Best Sellers**។ ជ្រើស sale ក្នុង Transactions ដើម្បី load lines ទៅ grid ខាងក្រោម។ `RefreshAllAsync` update ទិន្នន័យក្នុង tabs។
 
 ---
 
-## 6. Two recurring rules worth calling out
+## 6. Rules ពីរដែលប្រើជាប្រចាំ
 
-### Delete becomes deactivate when history exists
+### Delete ក្លាយជា deactivate បើមាន history
 
-Both `InventoryService.DeleteProductAsync` and `UserService.DeleteAsync` follow the same shape:
+`InventoryService.DeleteProductAsync` និង `UserService.DeleteAsync` ប្រើលំនាំដូចគ្នា៖
 
 ```csharp
 if (await repo.HasSalesHistoryAsync(id)) {
@@ -249,70 +283,72 @@ await repo.DeleteAsync(id);
 return true;               // "hard deleted"
 ```
 
-The `bool` return says which happened. The UI wraps it in `bool?` — `null` means the operation failed, `false` means deactivated, `true` means deleted — and tells the user honestly: "appears in past sales, so it was marked discontinued instead of deleted." This keeps old receipts resolvable.
+Return `bool` ប្រាប់ថា hard delete ឬ soft delete។ UI ប្រើ `bool?` ដើម្បីបែងចែក `null` = operation បរាជ័យ, `false` = deactivated, `true` = deleted។ UI ប្រាប់លទ្ធផលដើម្បីឱ្យអ្នកប្រើយល់ថា row នៅតែមានសម្រាប់ sales history។
 
-Categories work differently: `CategoryService.DeleteAsync` counts products in the category and refuses if any exist, telling you how many.
+`CategoryService.DeleteAsync` ខុសពីនេះ៖ វារាប់ products ក្នុង category ហើយបដិសេធការលុបបើនៅមាន products ដោយប្រាប់ចំនួន។
 
-### You can't lock yourself out
+### រក្សា last active Admin
 
-`UserService` calls `EnsureAnotherActiveAdminExistsAsync` before demoting, deactivating, or deleting the last active admin. It counts active admins and throws if the count is ≤ 1.
-
----
-
-## 7. The domain models guard themselves
-
-Models don't have public setters. Validation lives in private property setters, so an invalid object is impossible to construct:
-
-- `Product.UnitPrice` — negative throws; valid values are rounded to 2 dp on the way in
-- `Product.Name` / `Sku` — required, trimmed, length-capped
-- `Product.CategoryId` — must be > 0
-- `Category.Name`, `User.Username` — same pattern
-- `Sale` constructor — rejects negative amounts and `paid < total`, computes `ChangeDue` itself
-
-Every model also has a static `FromDatabase(...)` factory. This is the hydration path for rows coming back from SQL, and it can set things the public constructor can't (identity, `CreatedAt`, `CategoryName`).
-
-`Sale.FromDatabase` has a deliberate trick (`Models/Sale.cs:71`): it calls `new Sale(cashierId, 0m, 0m)` to get past the `paid >= total` check, then assigns the real stored values through the object initializer. Historical rows are facts the database already accepted and must round-trip exactly, even if they'd fail today's validation.
+`UserService` ហៅ `EnsureAnotherActiveAdminExistsAsync` មុន demote, deactivate ឬ delete active Admin។ បើ active admin count ≤ 1 វា throw ដើម្បីមិនឱ្យ app operation នោះទុកគ្មាន active Admin។
 
 ---
 
-## 8. How data gets in and out of SQL
+## 7. Domain models validate state របស់ខ្លួន
 
-`SqlRepositoryBase` gives every repository four helpers, all following the same shape — open connection, build command, bind parameters, execute, dispose:
+Models ប្រើ controlled setters និង methods ដើម្បីអនុវត្ត validation៖
 
-- `ExecuteNonQueryAsync` — INSERT/UPDATE/DELETE, returns rows affected
-- `ExecuteScalarAsync<T>` — single value (`COUNT(1)` checks)
-- `QueryAsync<T>` — many rows, with a `Func<SqlDataReader, T>` map delegate
-- `QuerySingleAsync<T>` — one row (`CommandBehavior.SingleRow`) or null
+- `Product.UnitPrice` បដិសេធតម្លៃអវិជ្ជមាន និង round ទៅ 2 decimal places។
+- `Product.Name` / `Sku` ត្រូវមានតម្លៃ, trim និងកំណត់ maximum length។
+- `Product.CategoryId` ត្រូវ > 0។
+- `Category.Name` និង `User.Username` មាន validation ស្រដៀងគ្នា។
+- `Sale` constructor បដិសេធ negative amounts និង paid < total ហើយគណនា `ChangeDue`។
 
-Every repository passes a small static `MapX` method as the mapper — e.g. `SaleRepository.MapSale` reads columns by name via `GetOrdinal` and calls `Sale.FromDatabase`. `ReadNullableString` handles nullable columns from joins.
+Models សម្រាប់ database entities មាន static `FromDatabase(...)` factories ដើម្បី map SQL rows ទៅ objects។ វាអាចកំណត់ identity និង fields ដូចជា `CreatedAt`, `CategoryName` ដែល public constructor មិនកំណត់។
 
-All SQL is parameterised — `parameters.Add("@SKU", SqlDbType.NVarChar, 50).Value = ...`. No string concatenation anywhere, so no SQL injection. Decimal parameters get explicit `Precision = 10, Scale = 2` to match the `DECIMAL(10,2)` columns and avoid silent truncation.
-
-Two SQL details worth noting:
-
-- `ProductRepository.GetBySkuAsync` filters `AND p.IsActive = 1` — the till can't scan a discontinued product.
-- `SaleRepository.GetDailyTotalsAsync` uses `OUTER APPLY` for the unit count instead of joining `SaleDetails`. A direct join would repeat each sale header once per line item and inflate both `SaleCount` and `TotalRevenue`.
+`Sale.FromDatabase` (`Models/Sale.cs:71`) ចាប់ផ្ដើមដោយ `new Sale(cashierId, 0m, 0m)` រួចដាក់ stored values តាម object initializer។ វាបំបែកការបង្កើត sale ថ្មីពីការអាន historical data ដែល database រក្សារួច។
 
 ---
 
-## 9. Errors and async — the same two helpers everywhere
+## 8. ទិន្នន័យចូល និងចេញពី SQL
 
-Two exception types come from the business layer:
+`SqlRepositoryBase` ផ្ដល់ helpers ដែលធ្វើលំដាប់៖ open connection → build command → bind parameters → execute → dispose។
 
-- `BusinessRuleException` — expected, user-fixable ("cart is empty", "SKU already exists")
-- `InsufficientStockException : BusinessRuleException` — carries `ProductName`, `Requested`, `Available`
-
-`UiFeedback.ShowError` (`Common/UiFeedback.cs`) switches on the exception type:
-
-| Type | Result |
+| Helper | ការប្រើប្រាស់ |
 |---|---|
-| `BusinessRuleException` | Warning box with the exact message |
-| `ConfigurationErrorsException` | "The application is not configured correctly" |
-| `SqlException` | Generic message + "nothing was saved" + error number |
-| `OperationCanceledException` | Silent — the user cancelled |
-| anything else | "unexpected problem", tell your administrator |
+| `ExecuteNonQueryAsync` | INSERT/UPDATE/DELETE; ត្រឡប់ rows affected |
+| `ExecuteScalarAsync<T>` | តម្លៃមួយ ដូចជា `COUNT(1)` |
+| `QueryAsync<T>` | Rows ច្រើន តាម `Func<SqlDataReader, T>` mapper |
+| `QuerySingleAsync<T>` | Row មួយ ឬ null ដោយ `CommandBehavior.SingleRow` |
 
-`AsyncUi.RunAsync` (`Common/AsyncUi.cs`) is the wrapper around every database call from the UI:
+Repositories ប្រើ static `MapX` methods។ ឧទាហរណ៍ `SaleRepository.MapSale` អាន columns តាម `GetOrdinal` ហើយហៅ `Sale.FromDatabase`។ `ReadNullableString` គ្រប់គ្រង nullable columns ពី joins។
+
+SQL ប្រើ parameters ដូចជា `parameters.Add("@SKU", SqlDbType.NVarChar, 50).Value = ...` ជំនួសភ្ជាប់ user input ទៅ SQL text។ Decimal parameters កំណត់ `Precision = 10, Scale = 2` ឱ្យត្រូវ `DECIMAL(10,2)`។
+
+ចំណុច SQL សំខាន់ពីរ៖
+
+- `ProductRepository.GetBySkuAsync` filter `AND p.IsActive = 1` ដើម្បីមិនឱ្យ scan discontinued product។
+- `SaleRepository.GetDailyTotalsAsync` ប្រើ `OUTER APPLY` សម្រាប់ unit count។ បើ join `SaleDetails` ដោយផ្ទាល់មុន aggregate អាចរាប់ sale header ម្ដងទៀតតាម line នីមួយៗ ហើយធ្វើឱ្យ `SaleCount` និង `TotalRevenue` លើស។
+
+---
+
+## 9. Errors និង async helpers
+
+Business layer មាន exceptions ពីរ៖
+
+- `BusinessRuleException` សម្រាប់បញ្ហាដែលអ្នកប្រើអាចកែបាន ដូចជា empty cart ឬ duplicate SKU។
+- `InsufficientStockException : BusinessRuleException` ផ្ទុក `ProductName`, `Requested`, `Available`។
+
+`UiFeedback.ShowError` ក្នុង `Common/UiFeedback.cs` ជ្រើស message តាម exception type៖
+
+| Type | លទ្ធផល |
+|---|---|
+| `BusinessRuleException` | Warning box ជាមួយ message ជាក់លាក់ |
+| `ConfigurationErrorsException` | "The application is not configured correctly" |
+| `SqlException` | Generic message, "nothing was saved" និង error number |
+| `OperationCanceledException` | មិនបង្ហាញ error សម្រាប់ការលុបចោល |
+| ប្រភេទផ្សេង | "unexpected problem" និងណែនាំឱ្យទាក់ទង administrator |
+
+`AsyncUi.RunAsync` ក្នុង `Common/AsyncUi.cs` ជា wrapper សម្រាប់ database calls ពី UI៖
 
 ```csharp
 var products = await AsyncUi.RunAsync(this, "load the product list",
@@ -321,15 +357,17 @@ var products = await AsyncUi.RunAsync(this, "load the product list",
 if (products is null) return;   // failed, already reported
 ```
 
-It sets the wait cursor, awaits, catches everything through `UiFeedback.ShowError`, and restores the cursor in `finally` (guarded by `IsDisposed` in case the form closed mid-await). The generic overload returns `default` (i.e. `null`) on failure, so callers check for null and bail — the error has already been shown with the right wording.
+វាកំណត់ wait cursor, await operation, catch exceptions តាម `UiFeedback.ShowError` ហើយស្ដារ cursor ក្នុង `finally`។ វាពិនិត្យ `IsDisposed` ដើម្បីគ្រប់គ្រងករណី form បិទពេលកំពុង await។ Generic overload ត្រឡប់ `default` ពេលបរាជ័យ; សម្រាប់ reference types វាជា `null` ដូច្នេះ caller ពិនិត្យ null ហើយ return ដោយមិនបង្ហាញ error ស្ទួន។
 
-Note the `.ConfigureAwait(true)` on UI calls — continuations must resume on the UI thread. Business and data layers use `.ConfigureAwait(false)` throughout since they don't touch controls.
+UI calls ប្រើ `.ConfigureAwait(true)` ដើម្បីឱ្យ continuation ត្រឡប់ទៅ UI thread មុនកែ controls។ Business Logic និង Data Access ប្រើ `.ConfigureAwait(false)` ព្រោះមិនប៉ះ UI controls។
 
 ---
 
-## 10. One request, end to end
+## 10. Request មួយពីដើមដល់ចប់
 
-Scanning a barcode and completing a sale:
+Cashier scan SKU ហើយចុច Enter។ POS ហៅ Inventory service, service validate input ហើយ repository query product។ Cart validate និងរក្សាទុក line; UI refresh totals។ ពេលបញ្ចូល cash ហើយចុច F9, SaleService ពិនិត្យ stock/payment ម្ដងទៀត ហើយ SaleRepository save sale និង stock updates ក្នុង transaction។ ក្រោយ COMMIT បង្ហាញ receipt ហើយ reset cart។
+
+លំហូរលម្អិតជាមួយ method names៖
 
 ```
 User types SKU + Enter in PosForm
@@ -358,4 +396,4 @@ User enters cash, presses F9
   → ResetForNextCustomer + LoadProductsAsync
 ```
 
-Every layer boundary is crossed through an interface, and the only place the SQL transaction exists is the one method that actually needs it.
+Repository boundary ប្រើ interfaces។ Forms ហៅ services ហើយ concrete dependencies ត្រូវបានភ្ជាប់ក្នុង `AppServices`។ Transaction សម្រាប់ checkout ស្ថិតក្នុង `SaveSaleAsync` ដើម្បីគ្រប់គ្រង sale header, lines និង stock ជាឯកតាតែមួយ។
