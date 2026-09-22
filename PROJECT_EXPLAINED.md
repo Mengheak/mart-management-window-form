@@ -1,8 +1,8 @@
 # Mini Mart Management System — ការពន្យល់ងាយយល់
 
-ឯកសារនេះពន្យល់ថាកម្មវិធីធ្វើអ្វី, source code រៀបចំយ៉ាងដូចម្ដេច និងអ្វីកើតឡើងពីពេល Sign in រហូតដល់ Checkout។ វាសម្រាប់អ្នកអានដែលមិនទាន់ស្គាល់ codebase ឬត្រូវពន្យល់គម្រោងក្នុង presentation។
+ឯកសារនេះជា standalone guide ដែលពន្យល់ថាកម្មវិធីធ្វើអ្វី, source code រៀបចំយ៉ាងដូចម្ដេច, អ្វីកើតឡើងពីពេល Sign in រហូតដល់ Checkout និងរបៀប demo project ក្នុង presentation។ វាសម្រាប់អ្នកអានដែលមិនទាន់ស្គាល់ codebase និង teammate ដែលត្រូវរៀនយកទៅបង្ហាញបន្ត។
 
-> អាន [README.md](README.md) សម្រាប់ install/run, [SYSTEM_FLOW.md](SYSTEM_FLOW.md) សម្រាប់ class និង method លម្អិត និង [DATA_MANAGEMENT.md](DATA_MANAGEMENT.md) សម្រាប់គ្រប់គ្រង database។ Technical terms, identifiers, ឈ្មោះ UI និង code examples រក្សាភាសាដើម ដើម្បីឱ្យផ្គូផ្គងជាមួយ source code។
+Technical terms, identifiers, ឈ្មោះ UI និង code examples រក្សាភាសាអង់គ្លេស ដើម្បីឱ្យផ្គូផ្គងជាមួយ source code។ អ្នកអាចប្រើឯកសារនេះដោយមិនចាំបាច់អាន Markdown file ផ្សេងជាមុន។
 
 ## របៀបអានឯកសារនេះ
 
@@ -10,6 +10,7 @@
 - ផ្នែក 4 ពន្យល់ user journey ពី Startup, Sign in, POS, Checkout និង Admin dashboard។
 - ផ្នែក 5–7 ពន្យល់ rules, OOP និងសំណួរដែលគេសួរញឹកញាប់។
 - ផ្នែក 8–9 បង្ហាញ file ដែលត្រូវអាន និង commands សម្រាប់ run។
+- ផ្នែក 10 ជា recording និង presentation plan ដែលក្រុមអាចហាត់តាមបាន។
 
 ## ពាក្យសំខាន់ៗ
 
@@ -259,7 +260,7 @@ Services ហៅ repositories តាម interfaces។ UI ហៅ service classes �
 
 **ហេតុអ្វីប្រើ `async`?** ដើម្បីឱ្យ UI អាចឆ្លើយតបនៅពេលរង់ចាំ database I/O។ UI continuation ប្រើ `ConfigureAwait(true)` ដើម្បីត្រឡប់ទៅ UI thread; Business Logic និង Data Access ប្រើ `ConfigureAwait(false)` ព្រោះមិនប៉ះ controls។
 
-**មុខងារណាមិនទាន់មាន?** គ្មាន Customers table, tax calculation, stored procedures ឬ discount column ក្នុង Sales។ `Sales.TotalAmount` រក្សាតម្លៃក្រោយ discount ហើយ receipt គណនា discount ពី `Subtotal − TotalAmount`។ មូលហេតុនីមួយៗមានក្នុង [README.md](README.md) §8។ កម្មវិធីក៏មិនមាន void/refund UI ដែរ។
+**មុខងារណាមិនទាន់មាន?** គ្មាន Customers table, tax calculation, stored procedures ឬ discount column ក្នុង Sales។ `Sales.TotalAmount` រក្សាតម្លៃក្រោយ discount ហើយ receipt គណនា discount ពី `Subtotal − TotalAmount`។ កម្មវិធីក៏មិនមាន void/refund UI ដែរ។
 
 ---
 
@@ -291,4 +292,124 @@ dotnet build MiniMartManagementSystem.sln
 dotnet run --project src/MiniMart.Presentation
 ```
 
-Seed script បន្ថែម 6 categories និង 24 products ក្នុងនោះ 5 products មាន stock ទាបជាង reorder level។ វាមិនបង្កើត users ទេ; ពេល run ដំបូង app ស្នើឱ្យបង្កើត Admin។ មើល [README.md](README.md) §3–§5 សម្រាប់ការដំឡើងពេញលេញ និង non-Docker SQL Server។
+Seed script បន្ថែម 6 categories និង 24 products ក្នុងនោះ 5 products មាន stock ទាបជាង reorder level។ វាមិនបង្កើត users ទេ; ពេល run ដំបូង app ស្នើឱ្យបង្កើត Admin។ Commands ខាងលើសន្មតថា SQL Server Docker container ប្រើ `localhost,1434` និង credentials ត្រូវនឹង configuration។
+
+---
+
+## 10. របៀប record និងធ្វើ presentation
+
+### 10.1 គោលដៅ
+
+ក្រោយមើល recording teammate គួរអាចពន្យល់ users, architecture, tables, main workflow និង rules សំខាន់ៗ ហើយអាច demo sale មួយពី Login រហូតដល់ Reports។ ពួកគេមិនចាំបាច់ទន្ទេញគ្រប់ class ទេ ប៉ុន្តែត្រូវតាម flow ពី Form → Service → Repository → SQL Server បាន។
+
+### 10.2 Recording plan ប្រហែល 20 នាទី
+
+| ពេលវេលា | ផ្នែក | អ្វីដែលត្រូវនិយាយ ឬបង្ហាញ |
+|---|---|---|
+| 00:00–01:30 | Introduction | Problem, Admin, Cashier និង main features |
+| 01:30–04:00 | Architecture | Projects ទាំងបី និង dependency direction |
+| 04:00–06:00 | Database | Tables ទាំង 5 និង relationships |
+| 06:00–08:00 | Startup/Login | `Program.cs`, `AppServices`, authentication និង role routing |
+| 08:00–15:00 | Live demo | Dashboard → Products/Low Stock → POS → Receipt → Reports |
+| 15:00–18:30 | Code flow | `PosForm` → `SaleService` → `SaleRepository` |
+| 18:30–20:00 | Safety/Summary | Transaction, stock guard, hashing, parameterized SQL និង limitations |
+
+### 10.3 Opening script
+
+> “Mini Mart Management System ជា Windows desktop application សម្រាប់ POS និង inventory management។ Cashier អាច search ឬ scan products, បង្កើត cart, ទទួល payment និងបោះពុម្ព receipt។ Admin អាចគ្រប់គ្រង products, categories, users, stock និង reports។ Data ទាំងអស់រក្សាក្នុង SQL Server។”
+
+> “ចំណុចសំខាន់របស់ system គឺ sale និង stock ត្រូវបាន update ជាមួយគ្នា។ Checkout ប្រើ database transaction ដូច្នេះ operation ជោគជ័យទាំងអស់ ឬ rollback ទាំងអស់។”
+
+### 10.4 Live-demo scenario
+
+មុន record ត្រូវ build app, start database, បញ្ចូល seed data និងបង្កើត demo Admin។ បិទ notifications, ពង្រីក UI និងកុំបង្ហាញ real credentials។
+
+ប្រើ transaction ឧទាហរណ៍នេះ ដើម្បីឱ្យក្រុមដឹង expected result ជាមុន៖
+
+| Product | SKU | Quantity | Unit price | Line total |
+|---|---|---:|---:|---:|
+| Cola 330ml Can | `BEV-001` | 2 | 1.25 | 2.50 |
+| Fresh Milk 1L | `DRY-001` | 1 | 1.85 | 1.85 |
+| | | | **Subtotal** | **4.35** |
+
+Apply **10% Percentage Discount**, បញ្ចូល Amount Paid = 5.00 ហើយពិនិត្យ៖
+
+```text
+Subtotal       = 4.35
+Discount       = 0.43
+Total          = 3.92
+Amount Paid    = 5.00
+Change Due     = 1.08
+```
+
+Demo តាមលំដាប់នេះ៖
+
+1. Sign in ជា Admin ហើយពន្យល់ Dashboard tiles និង Recent Sales។
+2. បើក Products ហើយពន្យល់ CRUD, Adjust Stock និង soft delete។
+3. បើក Low Stock ហើយពន្យល់ `StockQuantity <= ReorderLevel`។
+4. បើក Point of Sale។ កំណត់ Qty = 2 រួចបញ្ចូល `BEV-001`; កំណត់ Qty = 1 រួចបញ្ចូល `DRY-001`។
+5. Apply 10% Percentage Discount, បញ្ចូល 5.00 និងបង្ហាញ totals។
+6. ចុច **COMPLETE SALE (F9)** ហើយបង្ហាញ Receipt និង Sale ID។
+7. ត្រឡប់ Dashboard ដើម្បីបង្ហាញ Sales Today និង Revenue Today ដែលបាន refresh។
+8. បើក Sales History & Reports → Today ហើយបង្ហាញ Transactions, line items, Daily Totals និង Best Sellers។
+9. បើក Products ម្ដងទៀត ដើម្បីបង្ហាញថា Cola ថយ 2 និង Fresh Milk ថយ 1។
+
+### 10.5 Code walkthrough
+
+បង្ហាញតែ code ដែលបញ្ជាក់ end-to-end flow៖
+
+```text
+PosForm.CheckoutButton_Click
+  → SaleService.CheckoutAsync
+      → ValidateStockAsync
+      → QuoteCart
+      → build Sale and SaleDetails
+  → ISaleRepository.SaveSaleAsync
+  → SaleRepository.SaveSaleAsync
+      → BEGIN TRANSACTION
+      → INSERT Sales
+      → INSERT SaleDetails
+      → guarded UPDATE Products
+      → COMMIT or ROLLBACK
+  → ReceiptForm
+```
+
+ពេលបង្ហាញ guarded update ត្រូវពន្យល់ថា `WHERE StockQuantity >= @Quantity` ជាការធានាចុងក្រោយ។ បើ stock ត្រូវបានអ្នកផ្សេងទិញមុន update នោះ rows affected = 0 ហើយ transaction rollback។
+
+### 10.6 បែងចែកសមាជិក
+
+| ក្រុម | ការបែងចែកដែលណែនាំ |
+|---|---|
+| 2 នាក់ | Person 1: Problem, Architecture, Database · Person 2: Demo, Code flow, Safety, Conclusion |
+| 3 នាក់ | Person 1: Introduction/Architecture · Person 2: Database/Admin/POS demo · Person 3: Code/Security/Limitations |
+| 4 នាក់ | Person 1: Problem/Features · Person 2: Architecture/Database · Person 3: Live demo · Person 4: Code flow/Security/Conclusion |
+
+សមាជិកគ្រប់គ្នាត្រូវយល់ flow ទាំងមូល ព្រោះ Q&A អាចសួរអ្នកណាក៏បាន។
+
+### 10.7 សំណួរដែលត្រូវហាត់
+
+- ហេតុអ្វីប្រើ 3-Tier Architecture?
+- ហេតុអ្វី repository interfaces នៅ BusinessLogic?
+- អ្វីការពារ stock មិនឱ្យក្រោម 0?
+- ហេតុអ្វី stock ត្រូវបានពិនិត្យពីរដង?
+- បើ checkout បរាជ័យពាក់កណ្ដាល តើមានអ្វីកើតឡើង?
+- Password រក្សាទុកយ៉ាងដូចម្ដេច?
+- Parameterized SQL ការពារ SQL injection យ៉ាងដូចម្ដេច?
+- ហេតុអ្វី product ដែលធ្លាប់លក់ប្រើ soft delete?
+- Admin និង Cashier ខុសគ្នាយ៉ាងដូចម្ដេច?
+- Project មាន limitations អ្វីខ្លះ?
+
+ចម្លើយសម្រាប់សំណួរទាំងនេះមានក្នុងផ្នែក 2–7 នៃឯកសារនេះ។
+
+### 10.8 Rehearsal checklist
+
+- [ ] អាចពន្យល់ project ក្នុង 30 វិនាទី។
+- [ ] អាចគូរ layers ទាំងបី និង dependency direction។
+- [ ] អាចរាយ tables ទាំង 5 និងពន្យល់ `Sales` ទល់នឹង `SaleDetails`។
+- [ ] អាចធ្វើ demo transaction ខាងលើដោយមិនមើលជំហាន។
+- [ ] អាចបង្ហាញ receipt, stock change និង report result។
+- [ ] អាចតាម code ពី `PosForm` ទៅ `SaleService` និង `SaleRepository`។
+- [ ] អាចពន្យល់ transaction, hashing, parameterized SQL និង soft delete។
+- [ ] អាចរាយ limitations ដោយមិនអះអាង feature ដែលមិនមាន។
+
+ធ្វើ dry run យ៉ាងហោចណាស់ពីរជុំ។ ជុំទីមួយអាចប្រើ notes; ជុំទីពីរនិយាយដោយ keywords និង system flow។ រៀបចំ screenshot ឬ recording ខ្លីនៃ successful checkout ជា backup បើ live database មានបញ្ហា។

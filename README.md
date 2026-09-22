@@ -2,22 +2,7 @@
 
 កម្មវិធី desktop POS និងការគ្រប់គ្រង stock ដែលសរសេរដោយ C# **Windows Forms**។ គម្រោងនេះប្រើ **3-Tier Architecture**, **ADO.NET** និង **SQL Server** ដោយផ្អែកលើការរចនាក្នុង `Mini_Mart_Management_System_Documentation.docx` និង schema ក្នុង `MiniMart_Database_Schema.sql`។
 
-ឯកសារនេះសម្រាប់អ្នកដែលចង់ដំឡើង និងបើកកម្មវិធី។ បើចង់យល់ពី source code មុន សូមអាន [PROJECT_EXPLAINED.md](PROJECT_EXPLAINED.md)។
-
-## ផែនទីឯកសារ
-
-| ឯកសារ | គួរអាននៅពេលណា? | អ្វីដែលទទួលបាន |
-|---|---|---|
-| **README.md** | ចង់ install, configure និង run | Prerequisites, database setup, connection string, build និង troubleshooting |
-| [PROJECT_EXPLAINED.md](PROJECT_EXPLAINED.md) | ចង់យល់ប្រព័ន្ធទាំងមូលជាមុន | Architecture, tables, user flow និងគំនិត OOP ជាភាសាសាមញ្ញ |
-| [SYSTEM_FLOW.md](SYSTEM_FLOW.md) | ចង់តាមដាន source code | Class, method និងលំហូរពី UI ទៅ SQL |
-| [DATA_MANAGEMENT.md](DATA_MANAGEMENT.md) | ចង់គ្រប់គ្រងទិន្នន័យ | App operations, SQL queries, backup, restore និង reset |
-
-**លំដាប់អានដែលណែនាំ៖** `PROJECT_EXPLAINED.md` → `README.md` → `SYSTEM_FLOW.md` → `DATA_MANAGEMENT.md`។ អ្នកដែលគ្រាន់តែចង់ប្រើកម្មវិធី អាចអានតែ README និង DATA_MANAGEMENT បាន។
-
-## របៀបប្រើពាក្យក្នុងឯកសារ
-
-ការពន្យល់សរសេរជាភាសាខ្មែរ ប៉ុន្តែរក្សា technical terms ដូចជា **Repository**, **Service**, **Transaction**, **SQL Server**, **DTO**, **CRUD** និង **Dependency Injection** ជាភាសាអង់គ្លេស។ ឈ្មោះ UI ដូចជា **Products**, **Users**, **Adjust Stock**, class/method names, code, commands និង file paths ក៏រក្សាដដែល ដើម្បីឱ្យអាចស្វែងរកក្នុងកម្មវិធី និង source code បានត្រឹមត្រូវ។
+ឯកសារនេះផ្តោតលើការ install, configure និង run កម្មវិធី។
 
 ## ចាប់ផ្ដើមប្រើប្រាស់រហ័ស
 
