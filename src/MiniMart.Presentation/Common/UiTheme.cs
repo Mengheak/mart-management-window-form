@@ -1,4 +1,5 @@
 using System.Configuration;
+using System.Globalization;
 
 namespace MiniMart.Presentation.Common;
 
@@ -26,10 +27,24 @@ public static class UiTheme
 
     public static readonly Font ReceiptFont = new("Consolas", 9.5f);
 
-    public static string CurrencySymbol { get; } =
-        ConfigurationManager.AppSettings["Ui.CurrencySymbol"] ?? "$";
+    public static string CurrencySymbol => "$";
 
     public static string Money(decimal amount) => $"{CurrencySymbol}{amount:N2}";
+
+    public static string GridMoneyFormat => $"\"{CurrencySymbol.Replace("\"", string.Empty)}\"#,##0.00";
+
+    public static string CurrencyCode => "USD";
+
+    public static decimal KhrPerUsd { get; set; } = ReadDefaultKhrPerUsd();
+
+    public static string MoneyKhr(decimal amount) => $"៛{decimal.Round(amount, 0, MidpointRounding.AwayFromZero):N0}";
+
+    private static decimal ReadDefaultKhrPerUsd() =>
+        decimal.TryParse(ConfigurationManager.AppSettings["Ui.KhrPerUsd"], NumberStyles.Number,
+            CultureInfo.InvariantCulture, out var rate) && rate >= 1m && rate <= 100_000m &&
+            rate == decimal.Truncate(rate)
+            ? rate
+            : 4_150m;
 
     public static void StyleButton(Button button, Color background, Color? foreground = null)
     {

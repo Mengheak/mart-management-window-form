@@ -150,7 +150,7 @@ public sealed class SaleRepository : SqlRepositoryBase, ISaleRepository
                    s.CashierId, u.Username AS CashierName
             FROM dbo.Sales AS s
             INNER JOIN dbo.Users AS u ON u.UserId = s.CashierId
-            WHERE s.SaleDate >= @FromDate AND s.SaleDate <= @ToDate
+            WHERE s.SaleDate >= @FromDate AND s.SaleDate < @ToDate
             ORDER BY s.SaleDate DESC, s.SaleId DESC;";
 
         return QueryAsync(
@@ -223,7 +223,7 @@ public sealed class SaleRepository : SqlRepositoryBase, ISaleRepository
                 FROM dbo.SaleDetails AS d
                 WHERE d.SaleId = s.SaleId
             ) AS lines
-            WHERE s.SaleDate >= @FromDate AND s.SaleDate <= @ToDate
+            WHERE s.SaleDate >= @FromDate AND s.SaleDate < @ToDate
             GROUP BY CAST(s.SaleDate AS DATE)
             ORDER BY SaleDay DESC;";
 
@@ -250,7 +250,7 @@ public sealed class SaleRepository : SqlRepositoryBase, ISaleRepository
             FROM dbo.SaleDetails AS d
             INNER JOIN dbo.Sales    AS s ON s.SaleId = d.SaleId
             INNER JOIN dbo.Products AS p ON p.ProductId = d.ProductId
-            WHERE s.SaleDate >= @FromDate AND s.SaleDate <= @ToDate
+            WHERE s.SaleDate >= @FromDate AND s.SaleDate < @ToDate
             GROUP BY p.ProductId, p.SKU, p.Name
             ORDER BY UnitsSold DESC, Revenue DESC;";
 

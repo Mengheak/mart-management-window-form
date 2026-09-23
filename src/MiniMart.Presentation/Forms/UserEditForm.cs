@@ -7,6 +7,7 @@ public sealed class UserEditForm : Form
 {
     private readonly AppServices _services;
     private readonly User? _existing;
+    private readonly bool _protectLastAdmin;
 
     private TextBox _usernameTextBox = null!;
     private TextBox _passwordTextBox = null!;
@@ -17,10 +18,11 @@ public sealed class UserEditForm : Form
 
     private bool IsNew => _existing is null;
 
-    public UserEditForm(AppServices services, User? user)
+    public UserEditForm(AppServices services, User? user, bool protectLastAdmin = false)
     {
         _services = services ?? throw new ArgumentNullException(nameof(services));
         _existing = user;
+        _protectLastAdmin = protectLastAdmin;
 
         BuildUi();
     }
@@ -62,7 +64,22 @@ public sealed class UserEditForm : Form
         };
         _roleCombo.Items.AddRange(new object[] { UserRole.Cashier, UserRole.Admin });
         _roleCombo.SelectedItem = _existing?.Role ?? UserRole.Cashier;
+        _roleCombo.Enabled = !_protectLastAdmin;
         AddRow("Role", _roleCombo, labelX, ref y, rowHeight);
+
+        if (_protectLastAdmin)
+        {
+            Controls.Add(new Label
+            {
+                AutoSize = false,
+                Font = new Font("Segoe UI", 8.5f),
+                ForeColor = UiTheme.MutedText,
+                Location = new Point(fieldX, y - 6),
+                Size = new Size(fieldWidth, 38),
+                Text = "Create another active admin before changing this account's role or sign-in access."
+            });
+            y += 40;
+        }
 
         _passwordTextBox = new TextBox
         {
@@ -100,6 +117,7 @@ public sealed class UserEditForm : Form
         {
             AutoSize = true,
             Checked = _existing?.IsActive ?? true,
+            Enabled = !_protectLastAdmin,
             Location = new Point(fieldX, y + 4),
             Text = "Account can sign in"
         };

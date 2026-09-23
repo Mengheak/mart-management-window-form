@@ -183,7 +183,12 @@ public sealed class UserListForm : Form
             return;
         }
 
-        using var editor = new UserEditForm(_services, user);
+        var activeAdminCount = (_grid.DataSource as IEnumerable<User>)?
+            .Count(candidate => candidate.IsAdmin && candidate.IsActive) ?? 0;
+        var protectLastAdmin = user.UserId == _currentAdmin.UserId &&
+            user.IsAdmin && user.IsActive && activeAdminCount <= 1;
+
+        using var editor = new UserEditForm(_services, user, protectLastAdmin);
 
         if (editor.ShowDialog(this) == DialogResult.OK)
         {

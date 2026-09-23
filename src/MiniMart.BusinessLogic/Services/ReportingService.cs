@@ -65,6 +65,8 @@ public class ReportingService
             throw new BusinessRuleException("The start date cannot be later than the end date.");
         }
 
-        return (fromDate.Date, toDate.Date.AddDays(1).AddSeconds(-1));
+        // Use an exclusive upper bound so sales in the last fractional second
+        // of the selected day are included as well.
+        return (fromDate.Date, toDate.Date.AddDays(1));
     }
 }

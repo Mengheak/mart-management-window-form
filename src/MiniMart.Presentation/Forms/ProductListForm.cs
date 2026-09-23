@@ -165,7 +165,7 @@ public sealed class ProductListForm : Form
     private static DataGridViewTextBoxColumn MoneyColumn(string property, string header)
     {
         var column = TextColumn(property, header, 96);
-        column.DefaultCellStyle.Format = "N2";
+        column.DefaultCellStyle.Format = UiTheme.GridMoneyFormat;
         column.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
         return column;
     }

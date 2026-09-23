@@ -127,7 +127,7 @@ public sealed class LowStockForm : Form
     private static DataGridViewTextBoxColumn MoneyColumn(string property, string header)
     {
         var column = Column(property, header, 110);
-        column.DefaultCellStyle.Format = "N2";
+        column.DefaultCellStyle.Format = UiTheme.GridMoneyFormat;
         column.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
         return column;
     }

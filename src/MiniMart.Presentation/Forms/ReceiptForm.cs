@@ -14,12 +14,13 @@ public sealed class ReceiptForm : Form
     private readonly string _receiptText;
     private readonly TextBox _receiptTextBox;
 
-    public ReceiptForm(Sale sale, User cashier)
+    public ReceiptForm(Sale sale, User cashier, CheckoutTender tender)
     {
         _sale = sale ?? throw new ArgumentNullException(nameof(sale));
         ArgumentNullException.ThrowIfNull(cashier);
+        ArgumentNullException.ThrowIfNull(tender);
 
-        _receiptText = BuildReceiptText(sale, cashier);
+        _receiptText = BuildReceiptText(sale, cashier, tender);
 
         var headerPanel = new Panel
         {
@@ -43,7 +44,7 @@ public sealed class ReceiptForm : Form
             Font = new Font("Segoe UI Semibold", 19f),
             ForeColor = Color.White,
             Location = new Point(18, 46),
-            Text = $"Change due: {UiTheme.Money(sale.ChangeDue)}"
+            Text = $"Change due: {UiTheme.MoneyKhr(tender.ChangeKhr)}"
         };
 
         headerPanel.Controls.Add(changeLabel);
@@ -103,7 +104,7 @@ public sealed class ReceiptForm : Form
         Text = $"Receipt — Sale #{sale.SaleId}";
     }
 
-    private static string BuildReceiptText(Sale sale, User cashier)
+    private static string BuildReceiptText(Sale sale, User cashier, CheckoutTender tender)
     {
         var storeName = ConfigurationManager.AppSettings["Store.Name"] ?? "Mini Mart";
         var storeAddress = ConfigurationManager.AppSettings["Store.Address"] ?? string.Empty;
@@ -127,13 +128,14 @@ public sealed class ReceiptForm : Form
         builder.AppendLine($"Sale No : {sale.SaleId}");
         builder.AppendLine($"Date    : {sale.SaleDate:yyyy-MM-dd HH:mm:ss}");
         builder.AppendLine($"Cashier : {sale.CashierName ?? cashier.Username}");
+        builder.AppendLine($"Rate    : $1 = {UiTheme.MoneyKhr(tender.KhrPerUsd)}");
         builder.AppendLine(new string('=', ReceiptWidth));
         builder.AppendLine();
 
         foreach (var line in sale.Lines)
         {
             builder.AppendLine(Truncate(line.ProductName ?? $"Product #{line.ProductId}", ReceiptWidth));
-            var detail = $"  {line.Quantity} x {line.UnitPrice:N2}";
+            var detail = $"  {line.Quantity} x {UiTheme.Money(line.UnitPrice)}";
             builder.AppendLine(AmountRow(detail, line.LineTotal));
         }
 
@@ -146,9 +148,13 @@ public sealed class ReceiptForm : Form
             builder.AppendLine(AmountRow("Discount", -sale.DiscountAmount));
         }
 
-        builder.AppendLine(AmountRow("TOTAL", sale.TotalAmount));
-        builder.AppendLine(AmountRow("Cash Paid", sale.AmountPaid));
-        builder.AppendLine(AmountRow("Change Due", sale.ChangeDue));
+        builder.AppendLine(AmountRow("TOTAL USD", sale.TotalAmount));
+        builder.AppendLine(KhrRow("TOTAL KHR", tender.TotalKhr));
+        builder.AppendLine(AmountRow("Paid USD", tender.UsdPaid));
+        builder.AppendLine(KhrRow("Paid KHR", tender.KhrPaid));
+        builder.AppendLine(AmountRow("Paid USD equivalent", sale.AmountPaid));
+        builder.AppendLine(AmountRow("Change USD", sale.ChangeDue));
+        builder.AppendLine(KhrRow("Change KHR", tender.ChangeKhr));
         builder.AppendLine(new string('-', ReceiptWidth));
         builder.AppendLine();
         builder.AppendLine(Centre($"Items: {sale.TotalUnits}"));
@@ -159,8 +165,17 @@ public sealed class ReceiptForm : Form
         return builder.ToString();
     }
 
-    private static string AmountRow(string caption, decimal amount) =>
-        caption.PadRight(ReceiptWidth - 12) + $"{amount,12:N2}";
+    private static string AmountRow(string caption, decimal amount)
+    {
+        var formattedAmount = UiTheme.Money(amount);
+        return caption.PadRight(Math.Max(1, ReceiptWidth - formattedAmount.Length)) + formattedAmount;
+    }
+
+    private static string KhrRow(string caption, decimal amount)
+    {
+        var formattedAmount = UiTheme.MoneyKhr(amount);
+        return caption.PadRight(Math.Max(1, ReceiptWidth - formattedAmount.Length)) + formattedAmount;
+    }
 
     private static string Centre(string text)
     {

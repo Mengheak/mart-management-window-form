@@ -74,10 +74,10 @@ public sealed class ProductEditForm : Form
         AddRow("Category", _categoryCombo, labelX, ref y, rowHeight);
 
         _unitPriceNumeric = MakeMoneyNumeric(fieldX, y, fieldWidth);
-        AddRow("Unit Price", _unitPriceNumeric, labelX, ref y, rowHeight);
+        AddRow($"Unit Price ({UiTheme.CurrencyCode})", _unitPriceNumeric, labelX, ref y, rowHeight);
 
         _costPriceNumeric = MakeMoneyNumeric(fieldX, y, fieldWidth);
-        AddRow("Cost Price", _costPriceNumeric, labelX, ref y, rowHeight);
+        AddRow($"Cost Price ({UiTheme.CurrencyCode})", _costPriceNumeric, labelX, ref y, rowHeight);
 
         _stockNumeric = new NumericUpDown
         {

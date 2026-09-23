@@ -24,6 +24,7 @@ partial class PosForm
 
     private Panel rightPanel;
     private Panel cartToolbarPanel;
+    private TableLayoutPanel cartActionsPanel;
     private Label cartTitleLabel;
     private Button changeQuantityButton;
     private Button removeLineButton;
@@ -108,6 +109,7 @@ partial class PosForm
         discountTypeCombo = new ComboBox();
         discountTypeLabel = new Label();
         cartToolbarPanel = new Panel();
+        cartActionsPanel = new TableLayoutPanel();
         clearCartButton = new Button();
         removeLineButton = new Button();
         changeQuantityButton = new Button();
@@ -130,6 +132,7 @@ partial class PosForm
         discountBox.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)discountValueNumeric).BeginInit();
         cartToolbarPanel.SuspendLayout();
+        cartActionsPanel.SuspendLayout();
         statusStrip.SuspendLayout();
         SuspendLayout();
         // 
@@ -230,7 +233,7 @@ partial class PosForm
         addToCartButton.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
         addToCartButton.Location = new Point(118, 14);
         addToCartButton.Name = "addToCartButton";
-        addToCartButton.Size = new Size(586, 34);
+        addToCartButton.Size = new Size(334, 34);
         addToCartButton.TabIndex = 0;
         addToCartButton.Text = "Add to Cart";
         addToCartButton.Click += AddToCartButton_Click;
@@ -447,7 +450,7 @@ partial class PosForm
         paidLabel.Name = "paidLabel";
         paidLabel.Size = new Size(123, 25);
         paidLabel.TabIndex = 1;
-        paidLabel.Text = "Amount Paid";
+        paidLabel.Text = $"Paid ({UiTheme.CurrencyCode})";
         // 
         // checkoutButton
         // 
@@ -476,7 +479,7 @@ partial class PosForm
         discountBox.Size = new Size(330, 238);
         discountBox.TabIndex = 1;
         discountBox.TabStop = false;
-        discountBox.Text = "Discount";
+        discountBox.Text = $"Discount (flat amount in {UiTheme.CurrencyCode})";
         // 
         // discountNoteLabel
         // 
@@ -538,20 +541,33 @@ partial class PosForm
         // 
         // cartToolbarPanel
         // 
-        cartToolbarPanel.Controls.Add(clearCartButton);
-        cartToolbarPanel.Controls.Add(removeLineButton);
-        cartToolbarPanel.Controls.Add(changeQuantityButton);
+        cartToolbarPanel.Controls.Add(cartActionsPanel);
         cartToolbarPanel.Controls.Add(cartTitleLabel);
         cartToolbarPanel.Dock = DockStyle.Top;
         cartToolbarPanel.Location = new Point(6, 12);
         cartToolbarPanel.Name = "cartToolbarPanel";
         cartToolbarPanel.Size = new Size(712, 44);
         cartToolbarPanel.TabIndex = 2;
+        //
+        // cartActionsPanel
+        //
+        cartActionsPanel.ColumnCount = 3;
+        cartActionsPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33333F));
+        cartActionsPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33333F));
+        cartActionsPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33334F));
+        cartActionsPanel.Controls.Add(changeQuantityButton, 0, 0);
+        cartActionsPanel.Controls.Add(removeLineButton, 1, 0);
+        cartActionsPanel.Controls.Add(clearCartButton, 2, 0);
+        cartActionsPanel.Dock = DockStyle.Right;
+        cartActionsPanel.Name = "cartActionsPanel";
+        cartActionsPanel.RowCount = 1;
+        cartActionsPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+        cartActionsPanel.Size = new Size(390, 44);
         // 
         // clearCartButton
         // 
-        clearCartButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-        clearCartButton.Location = new Point(1094, 6);
+        clearCartButton.Margin = new Padding(3);
+        clearCartButton.Dock = DockStyle.Fill;
         clearCartButton.Name = "clearCartButton";
         clearCartButton.Size = new Size(110, 30);
         clearCartButton.TabIndex = 0;
@@ -560,8 +576,8 @@ partial class PosForm
         // 
         // removeLineButton
         // 
-        removeLineButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-        removeLineButton.Location = new Point(968, 6);
+        removeLineButton.Margin = new Padding(3);
+        removeLineButton.Dock = DockStyle.Fill;
         removeLineButton.Name = "removeLineButton";
         removeLineButton.Size = new Size(120, 30);
         removeLineButton.TabIndex = 1;
@@ -570,8 +586,8 @@ partial class PosForm
         // 
         // changeQuantityButton
         // 
-        changeQuantityButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-        changeQuantityButton.Location = new Point(842, 6);
+        changeQuantityButton.Margin = new Padding(3);
+        changeQuantityButton.Dock = DockStyle.Fill;
         changeQuantityButton.Name = "changeQuantityButton";
         changeQuantityButton.Size = new Size(120, 30);
         changeQuantityButton.TabIndex = 2;
@@ -645,6 +661,7 @@ partial class PosForm
         ((System.ComponentModel.ISupportInitialize)discountValueNumeric).EndInit();
         cartToolbarPanel.ResumeLayout(false);
         cartToolbarPanel.PerformLayout();
+        cartActionsPanel.ResumeLayout(false);
         statusStrip.ResumeLayout(false);
         statusStrip.PerformLayout();
         ResumeLayout(false);
@@ -665,7 +682,7 @@ partial class PosForm
         label.AutoSize = false;
         label.Dock = DockStyle.Fill;
         label.Font = font;
-        label.Text = "0.00";
+        label.Text = UiTheme.Money(0m);
         label.TextAlign = ContentAlignment.MiddleRight;
     }
 
@@ -688,7 +705,7 @@ partial class PosForm
     {
         var column = MakeColumn(propertyName, header, width, DataGridViewAutoSizeColumnMode.None);
         column.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
-        column.DefaultCellStyle.Format = "N2";
+        column.DefaultCellStyle.Format = UiTheme.GridMoneyFormat;
         return column;
     }
 }
